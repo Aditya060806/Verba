@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# Verba Arena
 
-## Project info
+**Verba Arena** is a real-time AI-powered simulated debate platform. It brings the thrill of live competitive debate rounds to your screen, featuring advanced AI opponents, intelligent judging, and immersive analytics—all in a cinematic, tournament-style experience.
 
-**URL**: https://lovable.dev/projects/d919cbce-1a1d-4354-b201-01e9ef12c88b
+## Vision
 
-## How can I edit this code?
+Verba Arena aims to democratize access to world-class debate training and competition. By blending cutting-edge AI with immersive design, we empower debaters of all levels to sharpen their skills, receive actionable feedback, and experience the excitement of real tournaments—anytime, anywhere.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+- **AI Opponents**
+  - Debate against AI with adjustable skill levels: Beginner, Intermediate, and Advanced.
+  - AI adapts to your arguments, maintains round context, and delivers realistic, strategic speeches.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d919cbce-1a1d-4354-b201-01e9ef12c88b) and start prompting.
+- **Multi-Format Support**
+  - Compete in Asian Parliamentary (AP), British Parliamentary (BP), and World Schools (WSDC) debate formats.
+  - Each format is faithfully simulated, including role structure, timing, and scoring.
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Contextual AI Argumentation**
+  - AI tracks the flow of the round, adapts arguments live, and generates realistic Points of Information (POIs) at strategic moments.
+  - Maintains logical consistency and clash throughout the debate.
 
-**Use your preferred IDE**
+- **Real-Time Debate Arena**
+  - Experience live debates with speech or text input.
+  - Animated POIs, dynamic overlays, and real-time feedback create a cinematic, tournament-like atmosphere.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Intelligent AI Judge**
+  - Automated judging based on matter, manner, method, and role fulfillment.
+  - Assigns speaker scores and provides structured, rubric-based feedback using Chain of Thought (CoT) and reductionist evaluation frameworks.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Case Prep Assistant**
+  - Smart motion interpretation and context-specific argument generation.
+  - Built-in evidence search assistant to help you prepare strong cases quickly.
 
-Follow these steps:
+- **Role Selection**
+  - Choose or assign roles (PM, LO, DPM, DLO, Whip) for AI or human debaters.
+  - Flexible team composition for solo practice or group rounds.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **POIs Engine**
+  - Realistic AI interruptions at strategic times.
+  - Evaluates and scores human responses to POIs for added realism.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Analytics Dashboard**
+  - Track speaking time, clash maps, argument win-loss heatmaps, and more.
+  - Visualize your progress and identify areas for improvement.
 
-# Step 3: Install the necessary dependencies.
-npm i
+- **Past Rounds Archive**
+  - Review full transcripts, argument flows, and judge feedback from previous debates.
+  - Build a personal library of debate rounds for reflection and growth.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- **Skill Tiers**
+  - AI adapts its debating style and challenge level to your skill tier.
+  - Progress from beginner to advanced with tailored feedback and challenges.
 
-**Edit a file directly in GitHub**
+- **Gamification**
+  - Compete on leaderboards, earn badges, and unlock progress levels (Track A).
+  - Motivation and recognition for consistent improvement.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Profile & History**
+  - Save rounds, feedback, and analytics to your profile.
+  - Track your journey and celebrate milestones.
 
-**Use GitHub Codespaces**
+- **Cinematic UI**
+  - Neon gradients, motion effects, and immersive visuals for a true tournament experience.
+  - Designed for emotional engagement and competitive excitement.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Use Cases
 
-## What technologies are used for this project?
+- **Debate Training**: Practice rounds with AI opponents, receive instant feedback, and refine your skills.
+- **Tournament Simulation**: Prepare for real competitions by simulating full rounds in official formats.
+- **Classroom & Clubs**: Teachers and coaches can use Verba Arena for group practice, skill assessment, and fun debate activities.
+- **Self-Improvement**: Track your progress, analyze past rounds, and set personal goals.
 
-This project is built with:
+## Roadmap
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- [ ] **Voice-to-Text & Speech Synthesis**: Enable fully spoken debates with real-time transcription and AI-generated speeches.
+- [ ] **Custom Motions & Formats**: Allow users to create custom debate motions and support additional formats.
+- [ ] **Collaborative Prep**: Real-time team case prep and shared note-taking.
+- [ ] **Mobile App**: Bring Verba Arena to iOS and Android for on-the-go practice.
+- [ ] **Expanded Analytics**: Deeper insights, including rhetorical device tracking and argument mapping.
+- [ ] **Community Features**: Public leaderboards, debate challenges, and user-generated content.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/d919cbce-1a1d-4354-b201-01e9ef12c88b) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+*This project is built with Vite, TypeScript, React, shadcn-ui, and Tailwind CSS.*
