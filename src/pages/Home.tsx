@@ -64,7 +64,7 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-animated-gradient pt-20 relative overflow-hidden">
+    <div role="main" className="min-h-screen bg-animated-gradient pt-20 relative overflow-hidden">
       <ParticleBackground />
       <SmartNotifications />
       <div className="container mx-auto px-4 py-8 relative z-10">

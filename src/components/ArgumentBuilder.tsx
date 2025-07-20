@@ -352,6 +352,8 @@ const ArgumentBuilder = () => {
                                   size="sm"
                                   onClick={() => removeComponent(component.id)}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  aria-label="Remove component"
+                                  title="Remove component"
                                 >
                                   ×
                                 </Button>

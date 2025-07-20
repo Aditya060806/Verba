@@ -205,6 +205,8 @@ const SmartNotifications = () => {
                             variant="ghost"
                             size="sm"
                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto hover:text-destructive"
+                            aria-label="Close notification"
+                            title="Close notification"
                           >
                             <X className="w-3 h-3" />
                           </Button>

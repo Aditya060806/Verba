@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mic, MicOff, Play, Pause, SkipForward, Users, Clock, MessageSquare, Zap, Volume2, Hand, Brain, Settings, BookOpen } from "lucide-react";
+import { Mic, MicOff, Play, Pause, SkipForward, Users, Clock, MessageSquare, Zap, Volume2, Hand, Brain, Settings, BookOpen, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import SpeechNotesOverlay from "@/components/SpeechNotesOverlay";
@@ -80,7 +80,50 @@ const DebateArena = () => {
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef(false);
   
-  // Initialize speech recognition
+  // --- Text-to-Speech (TTS) for AI speeches ---
+  const speechSynthesisRef = useRef(window.speechSynthesis || null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [lastSpoken, setLastSpoken] = useState<string>("");
+
+  // Speak AI speech aloud
+  const speakAISpeech = (text: string) => {
+    if (speechSynthesisRef.current) {
+      speechSynthesisRef.current.cancel();
+      if (text) {
+        const utterance = new window.SpeechSynthesisUtterance(text);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utteranceRef.current = utterance;
+        speechSynthesisRef.current.speak(utterance);
+        setLastSpoken(text);
+      }
+    }
+  };
+
+  // TTS effect: Only speak when new AI speech is available and isPlaying is true
+  useEffect(() => {
+    if (isPlaying && currentSpeaker !== 0 && aiSpeeches[currentSpeaker] && aiSpeeches[currentSpeaker] !== lastSpoken) {
+      speakAISpeech(aiSpeeches[currentSpeaker]);
+    }
+    // Stop speech when not playing or speaker changes
+    if (!isPlaying && speechSynthesisRef.current) {
+      speechSynthesisRef.current.cancel();
+    }
+    return () => {
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+    };
+  }, [isPlaying, currentSpeaker, aiSpeeches]);
+
+  // --- Speech Recognition Fixes ---
+  // Clear transcription at the start of each speech
+  useEffect(() => {
+    setTranscription("");
+  }, [currentSpeaker]);
+
+  // Improved onresult handler
   useEffect(() => {
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -92,7 +135,7 @@ const DebateArena = () => {
       recognitionRef.current.serviceURI = '';
       
       // Set a longer timeout for no-speech detection
-      recognitionRef.current.grammars = null;
+      // recognitionRef.current.grammars = null; // REMOVE this line to fix the error
       
       // Enhanced language support for different accents
       const accentLanguages = [
@@ -112,14 +155,15 @@ const DebateArena = () => {
           }
         }
         
-        // Clear any error status when speech is detected
-        if (finalTranscript || interimTranscript) {
-          setSpeechStatus("");
-        }
-        
-        // Update transcription with both final and interim results
+        // Only update with new text
         setTranscription(prev => {
-          const newTranscript = prev + finalTranscript;
+          let newTranscript = prev;
+          if (finalTranscript && !prev.endsWith(finalTranscript)) {
+            newTranscript += finalTranscript;
+          }
+          if (interimTranscript && !prev.endsWith(interimTranscript)) {
+            newTranscript += interimTranscript;
+          }
           // Update debate context with current speech
           setDebateContext(ctx => ({
             ...ctx,
@@ -128,10 +172,11 @@ const DebateArena = () => {
           }));
           return newTranscript;
         });
-        
-        // Show interim results
-        if (interimTranscript) {
-          setTranscription(prev => prev + interimTranscript);
+        // Feedback for poor recognition
+        if (!finalTranscript && !interimTranscript) {
+          setSpeechStatus("No speech detected. Please speak clearly or check your microphone.");
+        } else {
+          setSpeechStatus("");
         }
       };
       
@@ -334,8 +379,14 @@ const DebateArena = () => {
     navigate('/verdict');
   };
 
+  // Manual clear transcription
+  const clearTranscription = () => {
+    setTranscription("");
+    setSpeechStatus("");
+  };
+
   return (
-    <div className="min-h-screen bg-animated-gradient pt-20 relative overflow-hidden">
+    <div role="main" className="min-h-screen bg-animated-gradient pt-20 relative overflow-hidden">
       <ParticleBackground particleCount={30} />
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
@@ -526,13 +577,23 @@ const DebateArena = () => {
               <h3 className="text-xl font-heading font-semibold mb-4 flex items-center text-gradient">
                 <MessageSquare className="w-5 h-5 mr-2" />
                 Live Transcription
-                <div className="ml-auto">
+                <div className="ml-auto flex gap-2">
                   {(isRecording || isPlaying) && (
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
                       <span className="text-xs text-accent">Live</span>
                     </div>
                   )}
+                  {/* Speak Again button for AI */}
+                  {currentSpeaker !== 0 && aiSpeeches[currentSpeaker] && (
+                    <Button size="icon" variant="ghost" onClick={() => speakAISpeech(aiSpeeches[currentSpeaker])} title="Speak Again" aria-label="Speak Again">
+                      <Volume2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {/* Clear transcription button */}
+                  <Button size="icon" variant="ghost" onClick={clearTranscription} title="Clear Transcription" aria-label="Clear Transcription">
+                    <Trash className="w-4 h-4" />
+                  </Button>
                 </div>
               </h3>
               <div className="bg-card/30 rounded-xl p-4 min-h-[200px] relative overflow-hidden">

@@ -459,6 +459,8 @@ const DebateCoach = () => {
         <Button
           onClick={() => setIsOpen(true)}
           className="relative w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent shadow-lg hover:shadow-xl transition-all duration-300 animate-float group"
+          aria-label="Open Coach"
+          title="Open Coach"
         >
           <MessageCircle className="w-7 h-7 text-white" />
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full animate-pulse-glow">
@@ -589,6 +591,7 @@ const DebateCoach = () => {
                 onClick={() => setMode(m.id as any)}
                 className="text-xs h-8 p-1"
                 title={m.label}
+                aria-label={m.label}
               >
                 <m.icon className="w-3 h-3" />
               </Button>
@@ -606,6 +609,7 @@ const DebateCoach = () => {
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-xs p-1"
               title={isExpanded ? "Collapse" : "Expand"}
+              aria-label={isExpanded ? "Collapse" : "Expand"}
             >
               {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
             </Button>
@@ -616,7 +620,7 @@ const DebateCoach = () => {
           {mode === 'chat' && (
             <div className="flex-1 flex flex-col min-h-0">
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4 custom-scrollbar">
+              <ScrollArea className="flex-1 p-4 custom-scrollbar overflow-y-auto max-h-[50vh] min-h-[200px]">
                 {messages.length === 0 ? (
                   <div className="text-center py-8 text-foreground-secondary">
                     <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />

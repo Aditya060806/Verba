@@ -74,7 +74,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-animated-gradient pt-20">
+    <div role="main" className="min-h-screen bg-animated-gradient pt-20">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
