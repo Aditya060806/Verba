@@ -104,7 +104,7 @@ const Home = () => {
 
           {/* Enhanced CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <EnhancedButton
+            <div className="w-[14rem]"><EnhancedButton
               variant="primary"
               size="lg"
               icon={Play}
@@ -114,37 +114,37 @@ const Home = () => {
             >
               Start Practice
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform ml-2" />
-            </EnhancedButton>
+            </EnhancedButton></div>
             
-            <EnhancedButton
-              variant="secondary"
+            <div className="w-[14rem]"><EnhancedButton
+              variant="primary"
               size="lg"
               icon={Brain}
               onClick={() => navigate("/learning")}
-              className="micro-bounce"
+              className="group morph-button holographic"
             >
               Start Learning
-            </EnhancedButton>
+            </EnhancedButton></div>
 
-            <EnhancedButton
-              variant="outline"
+            <div className="w-[14rem]"><EnhancedButton
+              variant="primary"
               size="lg"
               icon={Trophy}
               onClick={() => navigate("/past-rounds")}
-              className="interactive-press"
+              className="group morph-button holographic"
             >
               Past Rounds
-            </EnhancedButton>
+            </EnhancedButton></div>
 
-            <EnhancedButton
-              variant="outline"
+            <div className="w-[14rem]"><EnhancedButton
+              variant="primary"
               size="lg"
               icon={Calendar}
               onClick={() => navigate("/daily-challenge")}
-              className="interactive-press"
+              className="group morph-button holographic"
             >
               Daily Challenge
-            </EnhancedButton>
+            </EnhancedButton></div>
           </div>
         </div>
 
