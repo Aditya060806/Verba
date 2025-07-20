@@ -1,20 +1,20 @@
 # Verba Arena
 
 ## Overview
-**Verba Arena** is a real-time, AI-powered debate platform that simulates full competitive rounds—anytime, anywhere. It features:
+**Verba Arena** is a real time, AI-powered debate platform that simulates full competitive rounds—anytime, anywhere. It features:
 - Live AI opponents and judges
 - Multi-format support (AP, BP, WSDC)
 - Cinematic, immersive UI
 - Analytics, gamification, and deep feedback
 - Direct integration of official debate manuals and rubrics
 
-Built for debaters, coaches, and tournament organizers, Verba Arena brings the full experience of a world-class debate tournament to your screen.
+Built for debaters, coaches, and tournament organizers, Verba Arena brings the full experience of a world class debate tournament to your screen.
 
 ---
 
 ## Key Features
 
-### 🧠 Real-Time AI Debaters & Judge
+### 🧠 Real Time AI Debaters & Judge
 - **AI Opponents:** Adjustable skill tiers (Beginner, Intermediate, Advanced), format-appropriate roles, and live adaptation to human arguments.
 - **AI Judge:** Automated, rubric-based feedback using reductionist/CoT logic, clash weighting, and speaker scales. No mock data—real AI every round.
 - **Debate Coach:** OpenRouter Claude 3 Haiku integration for live, context-aware practice and feedback.
