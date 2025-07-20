@@ -84,20 +84,61 @@ const DebateArena = () => {
   const speechSynthesisRef = useRef(window.speechSynthesis || null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [lastSpoken, setLastSpoken] = useState<string>("");
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
 
-  // Speak AI speech aloud
+  // Speak AI speech aloud with improved error handling
   const speakAISpeech = (text: string) => {
-    if (speechSynthesisRef.current) {
+    if (!text || !speechSynthesisRef.current) return;
+    
+    try {
+      // Cancel any existing speech
       speechSynthesisRef.current.cancel();
-      if (text) {
-        const utterance = new window.SpeechSynthesisUtterance(text);
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        utteranceRef.current = utterance;
-        speechSynthesisRef.current.speak(utterance);
-        setLastSpoken(text);
+      
+      const utterance = new window.SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      // Set voice if available
+      const voices = speechSynthesisRef.current.getVoices();
+      const preferredVoice = voices.find(voice => 
+        voice.lang.includes('en') && voice.name.includes('Google')
+      ) || voices.find(voice => voice.lang.includes('en'));
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
       }
+      
+      utterance.onstart = () => {
+        setIsAISpeaking(true);
+        setSpeechStatus("AI is speaking...");
+      };
+      
+      utterance.onend = () => {
+        setIsAISpeaking(false);
+        setSpeechStatus("");
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('TTS Error:', event);
+        setIsAISpeaking(false);
+        setSpeechStatus("AI speech failed to play");
+      };
+      
+      utteranceRef.current = utterance;
+      speechSynthesisRef.current.speak(utterance);
+      setLastSpoken(text);
+      
+    } catch (error) {
+      console.error('TTS setup error:', error);
+      setSpeechStatus("AI speech failed to initialize");
+    }
+  };
+
+  // Manual replay AI speech
+  const replayAISpeech = () => {
+    if (aiSpeeches[currentSpeaker]) {
+      speakAISpeech(aiSpeeches[currentSpeaker]);
     }
   };
 
@@ -109,21 +150,23 @@ const DebateArena = () => {
     // Stop speech when not playing or speaker changes
     if (!isPlaying && speechSynthesisRef.current) {
       speechSynthesisRef.current.cancel();
+      setIsAISpeaking(false);
     }
     return () => {
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
       }
     };
-  }, [isPlaying, currentSpeaker, aiSpeeches]);
+  }, [isPlaying, currentSpeaker, aiSpeeches, lastSpoken]);
 
   // --- Speech Recognition Fixes ---
   // Clear transcription at the start of each speech
   useEffect(() => {
     setTranscription("");
+    setSpeechStatus("");
   }, [currentSpeaker]);
 
-  // Improved onresult handler
+  // Improved speech recognition with better error handling
   useEffect(() => {
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -132,10 +175,9 @@ const DebateArena = () => {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
       recognitionRef.current.maxAlternatives = 1;
-      recognitionRef.current.serviceURI = '';
       
-      // Set a longer timeout for no-speech detection
-      // recognitionRef.current.grammars = null; // REMOVE this line to fix the error
+      // Remove problematic properties
+      // recognitionRef.current.grammars = null; // This was causing the error
       
       // Enhanced language support for different accents
       const accentLanguages = [
@@ -155,28 +197,44 @@ const DebateArena = () => {
           }
         }
         
-        // Only update with new text
+        // Prevent double text by only adding new content
         setTranscription(prev => {
           let newTranscript = prev;
-          if (finalTranscript && !prev.endsWith(finalTranscript)) {
-            newTranscript += finalTranscript;
+          
+          // Only add final transcript if it's not already at the end
+          if (finalTranscript && !prev.endsWith(finalTranscript.trim())) {
+            newTranscript = prev + (prev.endsWith(' ') ? '' : ' ') + finalTranscript;
           }
-          if (interimTranscript && !prev.endsWith(interimTranscript)) {
-            newTranscript += interimTranscript;
+          
+          // Handle interim results more carefully
+          if (interimTranscript) {
+            // Remove any previous interim results and add new ones
+            const withoutInterim = newTranscript.replace(/\s*\[interim\].*$/, '');
+            newTranscript = withoutInterim + (withoutInterim.endsWith(' ') ? '' : ' ') + `[interim] ${interimTranscript}`;
           }
+          
           // Update debate context with current speech
           setDebateContext(ctx => ({
             ...ctx,
-            currentSpeech: newTranscript,
+            currentSpeech: newTranscript.replace(/\[interim\].*$/, ''), // Remove interim markers
             speechTime: timeElapsed
           }));
+          
           return newTranscript;
         });
+        
+        // Clear interim markers after a delay
+        if (finalTranscript) {
+          setTimeout(() => {
+            setTranscription(prev => prev.replace(/\s*\[interim\].*$/, ''));
+          }, 1000);
+        }
+        
         // Feedback for poor recognition
         if (!finalTranscript && !interimTranscript) {
           setSpeechStatus("No speech detected. Please speak clearly or check your microphone.");
         } else {
-          setSpeechStatus("");
+          setSpeechStatus("Recording your speech...");
         }
       };
       
@@ -226,7 +284,13 @@ const DebateArena = () => {
       recognitionRef.current.onend = () => {
         if (isListeningRef.current) {
           // Restart if still supposed to be listening
-          recognitionRef.current.start();
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.error('Failed to restart speech recognition:', error);
+            setIsRecording(false);
+            isListeningRef.current = false;
+          }
         }
       };
     }
@@ -578,7 +642,7 @@ const DebateArena = () => {
                 <MessageSquare className="w-5 h-5 mr-2" />
                 Live Transcription
                 <div className="ml-auto flex gap-2">
-                  {(isRecording || isPlaying) && (
+                  {(isRecording || isAISpeaking) && (
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
                       <span className="text-xs text-accent">Live</span>
@@ -586,12 +650,26 @@ const DebateArena = () => {
                   )}
                   {/* Speak Again button for AI */}
                   {currentSpeaker !== 0 && aiSpeeches[currentSpeaker] && (
-                    <Button size="icon" variant="ghost" onClick={() => speakAISpeech(aiSpeeches[currentSpeaker])} title="Speak Again" aria-label="Speak Again">
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={replayAISpeech} 
+                      title="Replay AI Speech" 
+                      aria-label="Replay AI Speech"
+                      className="hover:bg-primary/10 hover:text-primary"
+                    >
                       <Volume2 className="w-4 h-4" />
                     </Button>
                   )}
                   {/* Clear transcription button */}
-                  <Button size="icon" variant="ghost" onClick={clearTranscription} title="Clear Transcription" aria-label="Clear Transcription">
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    onClick={clearTranscription} 
+                    title="Clear Transcription" 
+                    aria-label="Clear Transcription"
+                    className="hover:bg-destructive/10 hover:text-destructive"
+                  >
                     <Trash className="w-4 h-4" />
                   </Button>
                 </div>
@@ -617,13 +695,35 @@ const DebateArena = () => {
                         <span className="inline-block w-2 h-5 bg-primary ml-1 animate-pulse neon-primary"></span>
                       </p>
                     </div>
-                  ) : isPlaying ? (
+                  ) : isAISpeaking ? (
                     <div className="space-y-4">
                       <div className="flex items-center space-x-2 text-secondary">
                         <div className="w-3 h-3 bg-secondary rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium">AI Speaking...</span>
+                        <span className="text-sm font-medium">AI is speaking...</span>
                         <div className="ml-auto">
                           <Brain className="w-4 h-4 text-secondary animate-pulse" />
+                        </div>
+                      </div>
+                      <p className="text-foreground leading-relaxed">
+                        {aiSpeeches[currentSpeaker] || "AI speech will appear here."}
+                        <span className="inline-block w-2 h-5 bg-secondary ml-1 animate-pulse"></span>
+                      </p>
+                    </div>
+                  ) : isPlaying && currentSpeaker !== 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2 text-accent">
+                        <div className="w-3 h-3 bg-accent rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">AI Speech Ready</span>
+                        <div className="ml-auto">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={replayAISpeech}
+                            className="text-xs"
+                          >
+                            <Volume2 className="w-3 h-3 mr-1" />
+                            Play
+                          </Button>
                         </div>
                       </div>
                       {aiLoading ? (
@@ -633,18 +733,18 @@ const DebateArena = () => {
                       ) : (
                         <p className="text-foreground leading-relaxed">
                           {aiSpeeches[currentSpeaker] || "AI speech will appear here."}
-                          <span className="inline-block w-2 h-5 bg-secondary ml-1 animate-pulse"></span>
                         </p>
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-center">
-                      <div>
-                        <Zap className="w-12 h-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-                        <p className="text-muted-foreground">
-                          Start the round or begin recording to see live transcription
-                        </p>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2 text-foreground-secondary">
+                        <div className="w-3 h-3 bg-foreground-secondary rounded-full"></div>
+                        <span className="text-sm font-medium">Ready for speech</span>
                       </div>
+                      <p className="text-foreground-secondary leading-relaxed">
+                        {currentSpeaker === 0 ? "Your turn to speak. Click 'Start Recording' to begin." : "AI speech will appear here when ready."}
+                      </p>
                     </div>
                   )}
                 </div>
