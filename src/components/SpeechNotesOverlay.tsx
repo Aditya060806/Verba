@@ -3,6 +3,7 @@ import { Plus, X, StickyNote, Target, Users, Lightbulb, Zap, GripVertical, Eye, 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { getDebateCoachResponse } from "@/lib/ai";
 
 interface Note {
   id: string;
@@ -19,6 +20,9 @@ const SpeechNotesOverlay = () => {
   const [draggedNote, setDraggedNote] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [aiLoadingNote, setAiLoadingNote] = useState<string | null>(null);
+  const [aiErrorNote, setAiErrorNote] = useState<string | null>(null);
+  const [noteStartTime, setNoteStartTime] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const noteTypes = [
@@ -40,6 +44,44 @@ const SpeechNotesOverlay = () => {
   useEffect(() => {
     localStorage.setItem('speech-notes', JSON.stringify(notes));
   }, [notes]);
+
+  // Start timer when overlay is opened
+  useEffect(() => {
+    if (isVisible && noteStartTime === null) {
+      setNoteStartTime(Date.now());
+    }
+    if (!isVisible && noteStartTime !== null) {
+      setNoteStartTime(null);
+    }
+  }, [isVisible, noteStartTime]);
+
+  // Analytics: count notes by type
+  const noteTypeCounts = noteTypes.reduce((acc, nt) => {
+    acc[nt.type] = notes.filter(n => n.type === nt.type).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // AI Suggestion for a note
+  const suggestForNote = async (note: Note) => {
+    setAiLoadingNote(note.id);
+    setAiErrorNote(null);
+    try {
+      // Use getDebateCoachResponse for context-aware suggestions
+      const suggestion = await getDebateCoachResponse({
+        prompt: `Suggest a ${note.title} for this debate. Current content: ${note.content}`,
+        context: {
+          noteType: note.type,
+          noteContent: note.content,
+          // TODO: Add debate context (motion, speeches, etc.)
+        }
+      });
+      updateNote(note.id, { content: suggestion });
+    } catch (err: any) {
+      setAiErrorNote(err.message || "Failed to get AI suggestion.");
+    } finally {
+      setAiLoadingNote(null);
+    }
+  };
 
   const createNote = (type: Note["type"]) => {
     const noteType = noteTypes.find(nt => nt.type === type);
@@ -108,6 +150,7 @@ const SpeechNotesOverlay = () => {
         onClick={() => setIsVisible(true)}
         className="fixed bottom-6 right-6 z-40 btn-primary rounded-full w-14 h-14 shadow-lg hover:shadow-xl"
         title="Open Speech Notes"
+        aria-label="Open Speech Notes"
       >
         <StickyNote className="w-6 h-6" />
       </Button>
@@ -135,6 +178,8 @@ const SpeechNotesOverlay = () => {
               variant="outline"
               onClick={() => setIsVisible(false)}
               className="border-card-border hover:border-destructive"
+              title="Close Speech Notes"
+              aria-label="Close Speech Notes"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -154,6 +199,21 @@ const SpeechNotesOverlay = () => {
                 {noteType.label}
               </Button>
             ))}
+          </div>
+
+          {/* Analytics Summary */}
+          <div className="mb-2 text-xs text-foreground-secondary">
+            <div className="flex flex-wrap gap-2 mb-1">
+              {noteTypes.map(nt => (
+                <span key={nt.type} className="inline-flex items-center px-2 py-1 rounded bg-card/30 border border-card-border">
+                  <nt.icon className="w-3 h-3 mr-1" />
+                  {nt.label}: {noteTypeCounts[nt.type] || 0}
+                </span>
+              ))}
+            </div>
+            <div>
+              Time spent note-taking: {noteStartTime ? `${Math.round((Date.now() - noteStartTime) / 1000)}s` : '0s'}
+            </div>
           </div>
 
           {/* Stats */}
@@ -177,7 +237,6 @@ const SpeechNotesOverlay = () => {
       {notes.map((note) => {
         const TypeIcon = getTypeIcon(note.type);
         const isEditing = editingNote === note.id;
-
         return (
           <div
             key={note.id}
@@ -199,60 +258,42 @@ const SpeechNotesOverlay = () => {
                   </Badge>
                   <GripVertical className="w-4 h-4 text-foreground-secondary cursor-move" />
                 </div>
-                <div className="flex items-center space-x-1">
-                  {!isEditing && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingNote(note.id)}
-                      className="w-6 h-6 p-0 hover:bg-primary/20"
-                    >
-                      <Lightbulb className="w-3 h-3" />
-                    </Button>
-                  )}
+                <div className="flex items-center gap-1">
                   <Button
-                    size="sm"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => suggestForNote(note)}
+                    disabled={aiLoadingNote === note.id}
+                    className="hover:bg-primary/10"
+                    title="AI Suggestion"
+                    aria-label="AI Suggestion"
+                  >
+                    {aiLoadingNote === note.id ? <EyeOff className="w-4 h-4 animate-pulse" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    size="icon"
                     variant="ghost"
                     onClick={() => deleteNote(note.id)}
-                    className="w-6 h-6 p-0 hover:bg-destructive/20"
+                    className="hover:bg-destructive/10"
+                    title="Delete Note"
+                    aria-label="Delete Note"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-
               {/* Note Content */}
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={note.content}
-                    onChange={(e) => updateNote(note.id, { content: e.target.value })}
-                    placeholder={`Add your ${note.title.toLowerCase()}...`}
-                    className="min-h-[80px] bg-card/50 border-card-border text-sm resize-none"
-                    onBlur={() => setEditingNote(null)}
-                    autoFocus
-                  />
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      onClick={() => setEditingNote(null)}
-                      className="btn-primary flex-1 text-xs py-1 h-auto"
-                    >
-                      Done
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  className="min-h-[60px] text-sm text-foreground cursor-text p-2 rounded bg-card/30 border border-card-border"
-                  onClick={() => setEditingNote(note.id)}
-                >
-                  {note.content || (
-                    <span className="text-foreground-secondary italic">
-                      Click to add {note.title.toLowerCase()}...
-                    </span>
-                  )}
-                </div>
+              <Textarea
+                value={note.content}
+                onChange={e => updateNote(note.id, { content: e.target.value })}
+                className="w-full min-h-[60px] max-h-40 resize-none bg-card/30 border-card-border"
+                disabled={isEditing ? false : aiLoadingNote === note.id}
+                onFocus={() => setEditingNote(note.id)}
+                onBlur={() => setEditingNote(null)}
+                placeholder={`Type your ${note.title.toLowerCase()}...`}
+              />
+              {aiErrorNote && aiLoadingNote === note.id && (
+                <div className="text-xs text-red-600 mt-1">{aiErrorNote}</div>
               )}
             </div>
           </div>
@@ -264,6 +305,7 @@ const SpeechNotesOverlay = () => {
         onClick={() => setIsVisible(false)}
         className="fixed bottom-6 right-6 pointer-events-auto btn-secondary rounded-full w-12 h-12 shadow-lg"
         title="Hide Speech Notes"
+        aria-label="Hide Speech Notes"
       >
         <EyeOff className="w-5 h-5" />
       </Button>

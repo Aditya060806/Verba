@@ -1,8 +1,9 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const BrandLogo = () => {
   return (
-    <div className="flex items-center space-x-3">
+    <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
       <div className="relative">
         <img
           src="/verba.png"
@@ -14,7 +15,7 @@ const BrandLogo = () => {
       <span className="text-3xl font-heading font-bold text-neutral-900" style={{color: '#a48be0'}}>
         Verba
       </span>
-    </div>
+    </Link>
   );
 };
 

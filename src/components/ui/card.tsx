@@ -9,11 +9,19 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-2xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-xl glass-card animate-fade-slide-up overflow-hidden relative group",
       className
     )}
     {...props}
-  />
+  >
+    {/* Neon animated border */}
+    <div className="absolute inset-0 pointer-events-none z-0">
+      <div className="w-full h-full rounded-2xl border-2 border-gradient-to-r from-primary via-accent to-secondary animate-neon-glow" />
+    </div>
+    <div className="relative z-10 h-full w-full">
+      {props.children}
+    </div>
+  </div>
 ))
 Card.displayName = "Card"
 
@@ -23,7 +31,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 animate-fade-slide-down", className)}
     {...props}
   />
 ))

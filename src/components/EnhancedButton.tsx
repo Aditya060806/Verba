@@ -27,13 +27,13 @@ const EnhancedButton = ({
   onClick,
   type = "button"
 }: EnhancedButtonProps) => {
-  const baseClasses = "relative overflow-hidden font-semibold transition-all duration-300 flex items-center justify-center space-x-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "relative overflow-hidden font-semibold transition-all duration-300 flex items-center justify-center space-x-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed group";
   
   const variantClasses = {
-    primary: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary-glow))] active:scale-95",
-    secondary: "bg-gradient-to-r from-secondary to-secondary-dark text-secondary-foreground hover:scale-105 active:scale-95 border border-white/20",
-    outline: "border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:scale-105 active:scale-95",
-    ghost: "text-foreground hover:bg-primary/10 hover:text-primary active:scale-95"
+    primary: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:scale-110 hover:shadow-neon focus:scale-110 focus:shadow-neon active:scale-95",
+    secondary: "bg-gradient-to-r from-secondary to-secondary-dark text-secondary-foreground hover:scale-110 hover:shadow-neon focus:scale-110 focus:shadow-neon active:scale-95 border border-white/20",
+    outline: "border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 focus:scale-110 active:scale-95",
+    ghost: "text-foreground hover:bg-primary/10 hover:text-primary hover:scale-110 focus:scale-110 active:scale-95"
   };
 
   const sizeClasses = {
@@ -70,7 +70,7 @@ const EnhancedButton = ({
       )}
       
       {/* Shimmer effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
     </button>
   );
 };

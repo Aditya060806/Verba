@@ -1,47 +1,245 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Mic, MicOff, Play, Pause, SkipForward, Users, Clock, MessageSquare, Zap, Volume2, Hand, Brain, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Mic, MicOff, Play, Pause, SkipForward, Users, Clock, MessageSquare, Zap, Volume2, Hand, Brain, Settings, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import SpeechNotesOverlay from "@/components/SpeechNotesOverlay";
 import AdvancedAudioVisualizer from "@/components/AdvancedAudioVisualizer";
 import ParticleBackground from "@/components/ui/particle-background";
+import { generateDebateSpeech, generatePOI } from "@/lib/ai";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const DebateArena = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const format = location.state?.format || "AP";
+  
+  // Role/timing definitions for each format
+  const formatSpeakers: Record<string, any[]> = {
+    AP: [
+      { role: "Prime Minister", side: "Government", time: 7, color: "primary" },
+      { role: "Leader of Opposition", side: "Opposition", time: 7, color: "accent" },
+      { role: "Deputy PM", side: "Government", time: 7, color: "primary" },
+      { role: "Deputy LO", side: "Opposition", time: 7, color: "accent" },
+      { role: "Government Whip", side: "Government", time: 7, color: "primary" },
+      { role: "Opposition Whip", side: "Opposition", time: 7, color: "accent" }
+    ],
+    BP: [
+      { role: "Prime Minister (OG)", side: "Opening Government", time: 7, color: "primary" },
+      { role: "Leader of Opposition (OO)", side: "Opening Opposition", time: 7, color: "accent" },
+      { role: "Deputy PM (OG)", side: "Opening Government", time: 7, color: "primary" },
+      { role: "Deputy LO (OO)", side: "Opening Opposition", time: 7, color: "accent" },
+      { role: "Member of Government (CG)", side: "Closing Government", time: 7, color: "primary" },
+      { role: "Member of Opposition (CO)", side: "Closing Opposition", time: 7, color: "accent" },
+      { role: "Government Whip (CG)", side: "Closing Government", time: 7, color: "primary" },
+      { role: "Opposition Whip (CO)", side: "Closing Opposition", time: 7, color: "accent" }
+    ],
+    WSDC: [
+      { role: "Speaker 1 (Prop)", side: "Proposition", time: 8, color: "primary" },
+      { role: "Speaker 2 (Opp)", side: "Opposition", time: 8, color: "accent" },
+      { role: "Speaker 3 (Prop)", side: "Proposition", time: 8, color: "primary" },
+      { role: "Speaker 4 (Opp)", side: "Opposition", time: 8, color: "accent" },
+      { role: "Reply (Prop)", side: "Proposition", time: 4, color: "primary" },
+      { role: "Reply (Opp)", side: "Opposition", time: 4, color: "accent" }
+    ]
+  };
+  
+  const manualLinks: Record<string, string> = {
+    AP: "/Malaysia UADC 2023 - Debate & Judging Handbook.pdf",
+    BP: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf",
+    WSDC: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf"
+  };
+  
+  const speakers = formatSpeakers[format];
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [transcription, setTranscription] = useState("");
   const [poiRequested, setPoiRequested] = useState(false);
-
-  const speakers = [
-    { role: "Prime Minister", side: "Government", time: 7, color: "primary" },
-    { role: "Leader of Opposition", side: "Opposition", time: 7, color: "accent" },
-    { role: "Deputy PM", side: "Government", time: 7, color: "primary" },
-    { role: "Deputy LO", side: "Opposition", time: 7, color: "accent" },
-    { role: "Government Whip", side: "Government", time: 7, color: "primary" },
-    { role: "Opposition Whip", side: "Opposition", time: 7, color: "accent" },
-  ];
-
-  const motion = "This House Would Ban All Forms of Political Advertising on Social Media";
-
-  const aiTranscripts = [
-    "Honorable Speaker, today we stand at a crossroads where democracy meets technology. The motion before us addresses a fundamental threat to our democratic institutions...",
-    "The government's position is fundamentally flawed. They seek to restrict the very channels through which modern political discourse occurs...",
-    "My colleague from the opposition misunderstands the nature of digital manipulation. When Cambridge Analytica...",
-  ];
-
+  const [aiSpeeches, setAiSpeeches] = useState<string[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [poiText, setPoiText] = useState<string | null>(null);
+  const [poiLoading, setPoiLoading] = useState(false);
+  const [poiError, setPoiError] = useState<string | null>(null);
+  const [speechStatus, setSpeechStatus] = useState<string>("");
+  
+  // Enhanced context tracking
+  const [debateContext, setDebateContext] = useState<any>({ 
+    speeches: [], 
+    pois: [], 
+    currentSpeech: "",
+    speechTime: 0,
+    motion: "This House Would Ban All Forms of Political Advertising on Social Media",
+    format,
+    level: "Intermediate"
+  });
+  
+  // Speech recognition setup
+  const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef(false);
+  
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.maxAlternatives = 1;
+      recognitionRef.current.serviceURI = '';
+      
+      // Set a longer timeout for no-speech detection
+      recognitionRef.current.grammars = null;
+      
+      // Enhanced language support for different accents
+      const accentLanguages = [
+        'en-US', 'en-GB', 'en-AU', 'en-CA', 'en-IN', 'en-NZ', 'en-ZA'
+      ];
+      
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        // Clear any error status when speech is detected
+        if (finalTranscript || interimTranscript) {
+          setSpeechStatus("");
+        }
+        
+        // Update transcription with both final and interim results
+        setTranscription(prev => {
+          const newTranscript = prev + finalTranscript;
+          // Update debate context with current speech
+          setDebateContext(ctx => ({
+            ...ctx,
+            currentSpeech: newTranscript,
+            speechTime: timeElapsed
+          }));
+          return newTranscript;
+        });
+        
+        // Show interim results
+        if (interimTranscript) {
+          setTranscription(prev => prev + interimTranscript);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        
+        // Handle specific error types
+        switch (event.error) {
+          case 'no-speech':
+            // Don't stop recording for no-speech, just show a message
+            console.log('No speech detected. Please speak louder or check your microphone.');
+            setSpeechStatus("No speech detected. Please speak louder or check your microphone.");
+            // Clear status after 3 seconds
+            setTimeout(() => setSpeechStatus(""), 3000);
+            break;
+          case 'audio-capture':
+            console.error('No microphone found. Please check your microphone permissions.');
+            setSpeechStatus("No microphone found. Please check your microphone permissions.");
+            setIsRecording(false);
+            isListeningRef.current = false;
+            break;
+          case 'not-allowed':
+            console.error('Microphone permission denied. Please allow microphone access.');
+            setSpeechStatus("Microphone permission denied. Please allow microphone access.");
+            setIsRecording(false);
+            isListeningRef.current = false;
+            break;
+          case 'network':
+            console.error('Network error occurred. Please check your internet connection.');
+            setSpeechStatus("Network error occurred. Please check your internet connection.");
+            setIsRecording(false);
+            isListeningRef.current = false;
+            break;
+          default:
+            console.error('Speech recognition error:', event.error);
+            setSpeechStatus(`Speech recognition error: ${event.error}`);
+            setIsRecording(false);
+            isListeningRef.current = false;
+        }
+      };
+      
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
+        setSpeechStatus("Listening... Speak now!");
+      };
+      
+      recognitionRef.current.onend = () => {
+        if (isListeningRef.current) {
+          // Restart if still supposed to be listening
+          recognitionRef.current.start();
+        }
+      };
+    }
+  }, [timeElapsed]);
+  
+  // Timer for speech duration
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && timeElapsed < speakers[currentSpeaker]?.time * 60) {
       interval = setInterval(() => {
-        setTimeElapsed(prev => prev + 1);
+        setTimeElapsed(prev => {
+          const newTime = prev + 1;
+          // Update debate context with current speech time
+          setDebateContext(ctx => ({
+            ...ctx,
+            speechTime: newTime
+          }));
+          return newTime;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, timeElapsed, currentSpeaker]);
+  }, [isPlaying, timeElapsed, currentSpeaker, speakers]);
+
+  // Fetch AI speech for current speaker if AI (simulate: all except first speaker is AI)
+  useEffect(() => {
+    const fetchAiSpeech = async () => {
+      if (currentSpeaker === 0) return; // Assume first speaker is human
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        const speaker = speakers[currentSpeaker];
+        const speech = await generateDebateSpeech({
+          motion: debateContext.motion,
+          format: debateContext.format,
+          side: speaker.side,
+          role: speaker.role,
+          level: debateContext.level,
+          context: debateContext
+        });
+        setAiSpeeches(prev => {
+          const updated = [...prev];
+          updated[currentSpeaker] = speech;
+          return updated;
+        });
+        setDebateContext((ctx: any) => ({
+          ...ctx,
+          speeches: [...(ctx.speeches || []), { role: speaker.role, side: speaker.side, text: speech }]
+        }));
+      } catch (err: any) {
+        setAiError(err.message || "Failed to generate AI speech.");
+      } finally {
+        setAiLoading(false);
+      }
+    };
+    fetchAiSpeech();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSpeaker]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -50,9 +248,35 @@ const DebateArena = () => {
   };
 
   const toggleRecording = () => {
-    setIsRecording(!isRecording);
     if (!isRecording) {
-      setTranscription("Honorable Speaker, the motion before us today represents a critical juncture in our democratic discourse...");
+      // Start recording
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+          isListeningRef.current = true;
+          setIsRecording(true);
+          setTranscription("");
+          setSpeechStatus("Starting speech recognition...");
+        } catch (error) {
+          console.error('Failed to start speech recognition:', error);
+          setSpeechStatus("Failed to start speech recognition. Please check microphone permissions.");
+        }
+      } else {
+        // Fallback: simulate transcription
+        setIsRecording(true);
+        setTranscription("Honorable Speaker, the motion before us today represents a critical juncture in our democratic discourse...");
+        setSpeechStatus("Speech recognition not available. Using fallback mode.");
+      }
+    } else {
+      // Stop recording
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        isListeningRef.current = false;
+      }
+      setIsRecording(false);
+      setSpeechStatus("Recording stopped.");
+      // Clear status after 2 seconds
+      setTimeout(() => setSpeechStatus(""), 2000);
     }
   };
 
@@ -64,14 +288,49 @@ const DebateArena = () => {
     if (currentSpeaker < speakers.length - 1) {
       setCurrentSpeaker(currentSpeaker + 1);
       setTimeElapsed(0);
+      setTranscription("");
+      setIsRecording(false);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        isListeningRef.current = false;
+      }
     }
   };
 
-  const requestPOI = () => {
-    setPoiRequested(!poiRequested);
+  // Handle POI request with enhanced context
+  const requestPOI = async () => {
+    setPoiRequested(true);
+    setPoiLoading(true);
+    setPoiError(null);
+    setPoiText(null);
+    try {
+      const speaker = speakers[currentSpeaker];
+      const poi = await generatePOI({
+        motion: debateContext.motion,
+        format: debateContext.format,
+        side: speaker.side,
+        role: speaker.role,
+        context: {
+          ...debateContext,
+          currentSpeech: transcription,
+          speechTime: timeElapsed
+        }
+      });
+      setPoiText(poi);
+      setDebateContext((ctx: any) => ({
+        ...ctx,
+        pois: [...(ctx.pois || []), { role: speaker.role, side: speaker.side, text: poi }]
+      }));
+    } catch (err: any) {
+      setPoiError(err.message || "Failed to generate POI.");
+    } finally {
+      setPoiLoading(false);
+    }
   };
 
   const handleFinishRound = () => {
+    // Save debate context for adjudication
+    (window as any).__DEBATE_CONTEXT__ = debateContext;
     navigate('/verdict');
   };
 
@@ -85,11 +344,21 @@ const DebateArena = () => {
             Debate Arena
           </h1>
           <p className="text-xl text-foreground-secondary max-w-3xl mx-auto mb-6">
-            {motion}
+            {debateContext.motion}
           </p>
-          <div className="flex justify-center space-x-4">
-            <span className="px-4 py-2 rounded-xl bg-primary/20 text-primary font-medium">Asian Parliamentary</span>
+          <div className="flex justify-center space-x-4 items-center">
+            <span className="px-4 py-2 rounded-xl bg-primary/20 text-primary font-medium">{format === "AP" ? "Asian Parliamentary" : format === "BP" ? "British Parliamentary" : "World Schools"}</span>
             <span className="px-4 py-2 rounded-xl bg-accent/20 text-accent font-medium">Live Round</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <a href={manualLinks[format]} target="_blank" rel="noopener noreferrer" className="underline text-primary">View {format} Manual</a>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -172,9 +441,30 @@ const DebateArena = () => {
                   {isRecording ? 'Stop Recording' : 'Start Recording'}
                 </Button>
                 
+                {/* Speech Status Message */}
+                {speechStatus && (
+                  <div className={`p-3 rounded-lg text-sm text-center ${
+                    speechStatus.includes('error') || speechStatus.includes('denied') || speechStatus.includes('found') 
+                      ? 'bg-red-100 text-red-700 border border-red-300' 
+                      : speechStatus.includes('Listening') 
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                  }`}>
+                    {speechStatus}
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={() => navigate('/peer-match')}
+                  className="w-full btn-secondary mb-4"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Find Peer Match
+                </Button>
+                
                 <Button 
                   onClick={handleFinishRound}
-                  className="w-full btn-primary mt-4"
+                  className="w-full btn-primary"
                 >
                   Finish Round
                 </Button>
@@ -275,10 +565,16 @@ const DebateArena = () => {
                           <Brain className="w-4 h-4 text-secondary animate-pulse" />
                         </div>
                       </div>
-                      <p className="text-foreground leading-relaxed">
-                        {aiTranscripts[currentSpeaker % aiTranscripts.length]}
-                        <span className="inline-block w-2 h-5 bg-secondary ml-1 animate-pulse"></span>
-                      </p>
+                      {aiLoading ? (
+                        <p className="text-foreground leading-relaxed animate-pulse">Generating AI speech...</p>
+                      ) : aiError ? (
+                        <p className="text-red-600">{aiError}</p>
+                      ) : (
+                        <p className="text-foreground leading-relaxed">
+                          {aiSpeeches[currentSpeaker] || "AI speech will appear here."}
+                          <span className="inline-block w-2 h-5 bg-secondary ml-1 animate-pulse"></span>
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-center">
@@ -326,9 +622,13 @@ const DebateArena = () => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
             <div className="neu-card p-6 max-w-md mx-4 animate-scale-in">
               <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">Point of Information</h3>
-              <p className="text-foreground-secondary mb-6">
-                "Honorable speaker, given your argument about enforcement, how would you address the jurisdictional challenges in international platforms?"
-              </p>
+              {poiLoading ? (
+                <p className="text-foreground-secondary mb-6 animate-pulse">Generating POI...</p>
+              ) : poiError ? (
+                <p className="text-red-600 mb-6">{poiError}</p>
+              ) : (
+                <p className="text-foreground-secondary mb-6">{poiText || "POI will appear here."}</p>
+              )}
               <div className="flex space-x-4">
                 <Button 
                   onClick={() => setPoiRequested(false)}

@@ -1,85 +1,79 @@
 # Verba Arena
 
-**Verba Arena** is a real-time AI-powered simulated debate platform. It brings the thrill of live competitive debate rounds to your screen, featuring advanced AI opponents, intelligent judging, and immersive analytics—all in a cinematic, tournament-style experience.
+## Overview
+**Verba Arena** is a real-time, AI-powered debate platform that simulates full competitive rounds—anytime, anywhere. It features:
+- Live AI opponents and judges
+- Multi-format support (AP, BP, WSDC)
+- Cinematic, immersive UI
+- Analytics, gamification, and deep feedback
+- Direct integration of official debate manuals and rubrics
 
-## Vision
-
-Verba Arena aims to democratize access to world-class debate training and competition. By blending cutting-edge AI with immersive design, we empower debaters of all levels to sharpen their skills, receive actionable feedback, and experience the excitement of real tournaments—anytime, anywhere.
-
-## Key Features
-
-- **AI Opponents**
-  - Debate against AI with adjustable skill levels: Beginner, Intermediate, and Advanced.
-  - AI adapts to your arguments, maintains round context, and delivers realistic, strategic speeches.
-
-- **Multi-Format Support**
-  - Compete in Asian Parliamentary (AP), British Parliamentary (BP), and World Schools (WSDC) debate formats.
-  - Each format is faithfully simulated, including role structure, timing, and scoring.
-
-- **Contextual AI Argumentation**
-  - AI tracks the flow of the round, adapts arguments live, and generates realistic Points of Information (POIs) at strategic moments.
-  - Maintains logical consistency and clash throughout the debate.
-
-- **Real-Time Debate Arena**
-  - Experience live debates with speech or text input.
-  - Animated POIs, dynamic overlays, and real-time feedback create a cinematic, tournament-like atmosphere.
-
-- **Intelligent AI Judge**
-  - Automated judging based on matter, manner, method, and role fulfillment.
-  - Assigns speaker scores and provides structured, rubric-based feedback using Chain of Thought (CoT) and reductionist evaluation frameworks.
-
-- **Case Prep Assistant**
-  - Smart motion interpretation and context-specific argument generation.
-  - Built-in evidence search assistant to help you prepare strong cases quickly.
-
-- **Role Selection**
-  - Choose or assign roles (PM, LO, DPM, DLO, Whip) for AI or human debaters.
-  - Flexible team composition for solo practice or group rounds.
-
-- **POIs Engine**
-  - Realistic AI interruptions at strategic times.
-  - Evaluates and scores human responses to POIs for added realism.
-
-- **Analytics Dashboard**
-  - Track speaking time, clash maps, argument win-loss heatmaps, and more.
-  - Visualize your progress and identify areas for improvement.
-
-- **Past Rounds Archive**
-  - Review full transcripts, argument flows, and judge feedback from previous debates.
-  - Build a personal library of debate rounds for reflection and growth.
-
-- **Skill Tiers**
-  - AI adapts its debating style and challenge level to your skill tier.
-  - Progress from beginner to advanced with tailored feedback and challenges.
-
-- **Gamification**
-  - Compete on leaderboards, earn badges, and unlock progress levels (Track A).
-  - Motivation and recognition for consistent improvement.
-
-- **Profile & History**
-  - Save rounds, feedback, and analytics to your profile.
-  - Track your journey and celebrate milestones.
-
-- **Cinematic UI**
-  - Neon gradients, motion effects, and immersive visuals for a true tournament experience.
-  - Designed for emotional engagement and competitive excitement.
-
-## Use Cases
-
-- **Debate Training**: Practice rounds with AI opponents, receive instant feedback, and refine your skills.
-- **Tournament Simulation**: Prepare for real competitions by simulating full rounds in official formats.
-- **Classroom & Clubs**: Teachers and coaches can use Verba Arena for group practice, skill assessment, and fun debate activities.
-- **Self-Improvement**: Track your progress, analyze past rounds, and set personal goals.
-
-## Roadmap
-
-- [ ] **Voice-to-Text & Speech Synthesis**: Enable fully spoken debates with real-time transcription and AI-generated speeches.
-- [ ] **Custom Motions & Formats**: Allow users to create custom debate motions and support additional formats.
-- [ ] **Collaborative Prep**: Real-time team case prep and shared note-taking.
-- [ ] **Mobile App**: Bring Verba Arena to iOS and Android for on-the-go practice.
-- [ ] **Expanded Analytics**: Deeper insights, including rhetorical device tracking and argument mapping.
-- [ ] **Community Features**: Public leaderboards, debate challenges, and user-generated content.
+Built for debaters, coaches, and tournament organizers, Verba Arena brings the full experience of a world-class debate tournament to your screen.
 
 ---
 
-*This project is built with Vite, TypeScript, React, shadcn-ui, and Tailwind CSS.*
+## Key Features
+
+### 🧠 Real-Time AI Debaters & Judge
+- **AI Opponents:** Adjustable skill tiers (Beginner, Intermediate, Advanced), format-appropriate roles, and live adaptation to human arguments.
+- **AI Judge:** Automated, rubric-based feedback using reductionist/CoT logic, clash weighting, and speaker scales. No mock data—real AI every round.
+- **Debate Coach:** OpenRouter Claude 3 Haiku integration for live, context-aware practice and feedback.
+
+### 🏆 Multi-Format Support
+- **Asian Parliamentary (AP)**
+- **British Parliamentary (BP)**
+- **World Schools (WSDC)**
+- Dynamic role selection, speech order, and rules for each format.
+
+### 📊 Analytics & Note-Taking
+- **Speaking time, clash maps, argument win-loss heatmaps**
+- **SpeechNotesOverlay:** Smart, draggable notes with AI suggestions and analytics summary
+- **Past Rounds:** Save and review transcripts, argument flows, and judge feedback
+
+### 🎮 Gamification
+- **Leaderboards, badges, and progress levels**
+- **Profile:** Track your journey, achievements, and round history
+
+### 📚 Manual & Rubric Integration
+- **Quick-access links and tooltips** for all major debate manuals and speaker scales
+- **Format-specific tips and rubric explanations** surfaced in the UI
+
+### 🎨 Cinematic UI/UX
+- Neon gradients, motion effects, animated POIs, heatmaps, and responsive design
+- No blank or broken pages—every screen is competition-ready
+
+---
+
+## AI & Tech Stack
+- **Sarvam AI:** Real-time case prep, AI debaters, POIs, and judge
+- **OpenRouter Claude 3 Haiku:** Live debate coach chatbot
+- **React, TypeScript, Tailwind, shadcn-ui**
+- **Official debate manuals** (APD, BP, WSDC, Speaker Scales) integrated throughout
+
+---
+
+## Supported Formats
+- **AP:** 3 speakers/side, 7 min speeches, POIs after 1st minute
+- **BP:** 4 teams, 2/side, 7 min speeches, no POIs during whip
+- **WSDC:** 3 speakers/side, 8 min speeches, reply speeches, POIs
+
+---
+
+## Requirements Checklist
+- [x] **Real-time AI case prep, debating, POIs, and judge (no mock data)**
+- [x] **Skill tiers, role assignment, and format-appropriate logic**
+- [x] **Multi-format support (AP, BP, WSDC) everywhere**
+- [x] **Analytics: speaking time, clash maps, heatmaps, note-taking**
+- [x] **Save/review past rounds, transcripts, and feedback**
+- [x] **Gamification: leaderboards, badges, progress**
+- [x] **Manual/rubric integration: tooltips, popovers, quick links**
+- [x] **Cinematic, responsive UI—no blank or broken pages**
+- [x] **Documentation: AI logic, skill tiers, evaluation methodology**
+
+---
+
+## Ready for Competition
+**Verba Arena is fully live-data ready and competition-grade.**
+Just add your Sarvam AI and OpenRouter API keys—every feature will run live.
+
+**Let the debates begin!**

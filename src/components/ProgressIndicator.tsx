@@ -26,11 +26,11 @@ const ProgressIndicator = ({
   };
 
   const variantClasses = {
-    primary: "bg-gradient-to-r from-primary to-accent",
-    secondary: "bg-gradient-to-r from-secondary to-secondary-dark",
-    success: "bg-gradient-to-r from-success to-success",
-    warning: "bg-gradient-to-r from-warning to-warning",
-    destructive: "bg-gradient-to-r from-destructive to-destructive"
+    primary: "bg-gradient-to-r from-primary via-accent to-secondary shadow-neon animate-gradient-move",
+    secondary: "bg-gradient-to-r from-secondary to-secondary-dark shadow-neon animate-gradient-move",
+    success: "bg-gradient-to-r from-success to-success shadow-neon animate-gradient-move",
+    warning: "bg-gradient-to-r from-warning to-warning shadow-neon animate-gradient-move",
+    destructive: "bg-gradient-to-r from-destructive to-destructive shadow-neon animate-gradient-move"
   };
 
   return (
@@ -54,7 +54,7 @@ const ProgressIndicator = ({
           style={{ width: `${percentage}%` }}
         >
           {/* Animated shimmer effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer pointer-events-none"></div>
         </div>
       </div>
     </div>

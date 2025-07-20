@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Trophy, Zap, TrendingUp, Users, Clock, Target, ChevronRight, Sparkles, BookOpen, Mic, Brain, Star } from "lucide-react";
+import { Play, Trophy, Zap, TrendingUp, Users, Clock, Target, ChevronRight, Sparkles, BookOpen, Mic, Brain, Star, Calendar } from "lucide-react";
 import GlossaryModal from "@/components/GlossaryModal";
 import TutorialModal from "@/components/TutorialModal";
 import EnhancedButton from "@/components/EnhancedButton";
@@ -119,21 +119,31 @@ const Home = () => {
             <EnhancedButton
               variant="secondary"
               size="lg"
-              icon={Trophy}
-              onClick={() => navigate("/past-rounds")}
+              icon={Brain}
+              onClick={() => navigate("/learning")}
               className="micro-bounce"
             >
-              View Past Rounds
+              Start Learning
             </EnhancedButton>
 
             <EnhancedButton
               variant="outline"
               size="lg"
-              icon={BookOpen}
-              onClick={() => setShowTutorial(true)}
+              icon={Trophy}
+              onClick={() => navigate("/past-rounds")}
               className="interactive-press"
             >
-              Tutorial
+              Past Rounds
+            </EnhancedButton>
+
+            <EnhancedButton
+              variant="outline"
+              size="lg"
+              icon={Calendar}
+              onClick={() => navigate("/daily-challenge")}
+              className="interactive-press"
+            >
+              Daily Challenge
             </EnhancedButton>
           </div>
         </div>
@@ -206,6 +216,8 @@ const Home = () => {
         <div className="mb-16">
           <MotionRecommendationEngine />
         </div>
+
+
 
         {/* Enhanced Quick Start Section */}
         <div className="neu-card p-8 text-center animate-fade-in glass-ultra relative overflow-hidden">

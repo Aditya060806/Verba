@@ -40,3 +40,54 @@
 .read-the-docs {
   color: #888;
 }
+
+@layer utilities {
+  .shadow-neon {
+    box-shadow: 0 0 16px 2px theme('colors.accent.DEFAULT'), 0 0 32px 4px theme('colors.primary.DEFAULT');
+  }
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 6px theme('colors.accent.DEFAULT')) drop-shadow(0 0 2px theme('colors.primary.DEFAULT'));
+  }
+}
+
+@keyframes neon-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px theme('colors.primary.DEFAULT'), 0 0 16px 4px theme('colors.accent.DEFAULT');
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 0 0 24px 8px theme('colors.accent.DEFAULT'), 0 0 48px 12px theme('colors.primary.DEFAULT');
+    opacity: 1;
+  }
+}
+.animate-neon-glow {
+  animation: neon-glow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes fade-slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-slide-down {
+  animation: fade-slide-down 0.8s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+@keyframes fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.8s cubic-bezier(0.4,0,0.2,1) both;
+}

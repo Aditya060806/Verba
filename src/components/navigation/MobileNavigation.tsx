@@ -12,8 +12,12 @@ const MobileNavigation = () => {
   };
 
   return (
-    <div className="md:hidden px-4 py-3 border-t border-white/10">
-      <div className="flex justify-between items-center">
+    <div className="md:hidden px-4 py-3 border-t border-white/10 bg-white/20 backdrop-blur-lg shadow-lg rounded-b-3xl animate-fade-slide-up relative">
+      {/* Neon animated border for mobile nav */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="w-full h-full rounded-b-3xl border-b-4 border-gradient-to-r from-primary via-accent to-secondary animate-neon-glow" />
+      </div>
+      <div className="flex justify-between items-center relative z-10">
         <NavigationItems isMobile={true} />
         
         {/* Mobile Auth Button */}
@@ -21,7 +25,7 @@ const MobileNavigation = () => {
           <Button 
             onClick={handleSignIn}
             size="sm"
-            className="btn-primary text-xs ml-2"
+            className="btn-primary text-xs ml-2 drop-shadow-glow"
           >
             Sign In
           </Button>

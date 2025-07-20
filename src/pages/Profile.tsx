@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Trophy, TrendingUp, Settings, Download, Edit, Award, BarChart3, Target, Clock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const Profile = () => {
   const [editMode, setEditMode] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
   
   const userProfile = {
     name: "Alex Chen",
@@ -51,6 +53,24 @@ const Profile = () => {
     notifications: true,
     darkMode: true,
     autoSave: true
+  };
+
+  // Scaffold: fetch user stats, badges, and round history (replace with backend/local storage integration)
+  // For now, use static data
+  useEffect(() => {
+    setHistory([
+      { date: "2024-01-15", format: "AP", role: "PM", result: "Win", score: 89 },
+      { date: "2024-01-12", format: "BP", role: "CO", result: "Loss", score: 78 },
+      { date: "2024-01-10", format: "AP", role: "DLO", result: "Win", score: 92 },
+      { date: "2024-01-08", format: "WSDC", role: "Speaker 2", result: "Win", score: 85 },
+    ]);
+  }, []);
+  // Badge/achievement tooltips
+  const achievementDescriptions: Record<string, string> = {
+    "First Victory": "Won your first debate round.",
+    "Perfect Score": "Achieved a perfect 100 score.",
+    "Speed Demon": "Completed 10 rounds in one day.",
+    "Consistency King": "Won 10 rounds in a row."
   };
 
   return (
@@ -209,41 +229,63 @@ const Profile = () => {
 
           {/* Achievements Tab */}
           <TabsContent value="achievements" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {achievements.map((achievement, index) => (
-                <div key={index} className="neu-card p-6 hover:scale-105 transition-transform animate-slide-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex items-start space-x-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      achievement.rarity === "Legendary" ? "bg-gradient-to-r from-accent to-primary" :
-                      achievement.rarity === "Epic" ? "bg-gradient-to-r from-primary to-secondary" :
-                      achievement.rarity === "Rare" ? "bg-gradient-to-r from-secondary to-accent" :
-                      "bg-gradient-to-r from-card to-card-secondary"
-                    }`}>
-                      <achievement.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-foreground">{achievement.title}</h4>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          achievement.rarity === "Legendary" ? "bg-accent/20 text-accent" :
-                          achievement.rarity === "Epic" ? "bg-primary/20 text-primary" :
-                          achievement.rarity === "Rare" ? "bg-secondary/20 text-secondary" :
-                          "bg-muted/20 text-muted-foreground"
-                        }`}>
-                          {achievement.rarity}
-                        </span>
+            <div className="neu-card p-6">
+              <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">Achievements & Badges</h3>
+              <div className="flex flex-wrap gap-4">
+                {achievements.map((ach, idx) => (
+                  <Tooltip key={idx}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center p-4 rounded-xl bg-card/30 border border-card-border shadow hover:scale-105 transition-transform cursor-pointer">
+                        <ach.icon className="w-8 h-8 mb-2 text-primary" />
+                        <div className="font-semibold text-primary mb-1">{ach.title}</div>
+                        <div className="text-xs text-foreground-secondary mb-1">{ach.date}</div>
+                        <div className="text-xs text-muted-foreground">{ach.rarity}</div>
                       </div>
-                      <p className="text-sm text-foreground-secondary mb-2">{achievement.description}</p>
-                      <p className="text-xs text-muted-foreground">{achievement.date}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {achievementDescriptions[ach.title] || ach.description}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
             </div>
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
+            <div className="neu-card p-6 mb-6">
+              <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">Round History</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-foreground-secondary">
+                      <th className="px-4 py-2">Date</th>
+                      <th className="px-4 py-2">Format</th>
+                      <th className="px-4 py-2">Role</th>
+                      <th className="px-4 py-2">Result</th>
+                      <th className="px-4 py-2">Score</th>
+                      <th className="px-4 py-2">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((round, idx) => (
+                      <tr key={idx} className="hover:bg-card/20 transition-all">
+                        <td className="px-4 py-2">{round.date}</td>
+                        <td className="px-4 py-2">{round.format}</td>
+                        <td className="px-4 py-2">{round.role}</td>
+                        <td className={`px-4 py-2 font-semibold ${round.result === 'Win' ? 'text-success' : 'text-destructive'}`}>{round.result}</td>
+                        <td className="px-4 py-2">{round.score}</td>
+                        <td className="px-4 py-2">
+                          <Button size="sm" variant="outline" className="border-card-border text-xs px-2 py-1 h-auto" onClick={() => window.location.href = '/past-rounds'}>
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="neu-card p-6">
                 <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">Improvement Areas</h3>

@@ -19,6 +19,7 @@ const ParticleBackground = ({ particleCount = 50, className = "" }: ParticleBack
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationFrameRef = useRef<number>();
+  const gradientRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -50,15 +51,21 @@ const ParticleBackground = ({ particleCount = 50, className = "" }: ParticleBack
     };
 
     const updateParticles = () => {
-      particlesRef.current.forEach(particle => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
+      const time = Date.now() * 0.0002;
+      particlesRef.current.forEach((particle, i) => {
+        // Parallax drift
+        particle.x += particle.vx + Math.sin(time + i) * 0.05;
+        particle.y += particle.vy + Math.cos(time + i) * 0.05;
 
         if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
         if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
 
-        // Gentle floating effect
-        particle.opacity = 0.1 + Math.sin(Date.now() * 0.001 + particle.x * 0.01) * 0.2;
+        // Gentle floating effect and color pulse
+        particle.opacity = 0.1 + Math.abs(Math.sin(Date.now() * 0.001 + particle.x * 0.01 + i)) * 0.3;
+        if (Math.random() < 0.001) {
+          // Occasional color pulse
+          particle.color = colors[Math.floor(Math.random() * colors.length)];
+        }
       });
     };
 
@@ -121,11 +128,18 @@ const ParticleBackground = ({ particleCount = 50, className = "" }: ParticleBack
   }, [particleCount]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`fixed inset-0 pointer-events-none z-0 ${className}`}
-      style={{ opacity: 0.6 }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className={`fixed inset-0 pointer-events-none z-0 ${className}`}
+        style={{ opacity: 0.7 }}
+      />
+      {/* Animated gradient overlay for cinematic effect */}
+      <div
+        ref={gradientRef}
+        className="fixed inset-0 pointer-events-none z-0 animate-gradient-move bg-gradient-to-br from-primary/30 via-accent/20 to-secondary/30 opacity-60 mix-blend-lighten"
+      />
+    </>
   );
 };
 

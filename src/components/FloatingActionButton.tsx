@@ -47,13 +47,16 @@ const FloatingActionButton = () => {
                 </span>
               </div>
               <button
+                aria-label={action.label}
                 onClick={() => {
                   action.action();
                   setIsOpen(false);
                 }}
-                className={`w-12 h-12 rounded-full ${action.className} flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 animate-slide-in-up border border-white/10`}
+                className={`w-12 h-12 rounded-full ${action.className} flex items-center justify-center shadow-lg hover:scale-125 active:scale-95 transition-all duration-300 animate-slide-in-up border border-white/10 shadow-neon relative overflow-hidden`}
               >
                 <action.icon className="w-5 h-5" />
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
               </button>
             </div>
           ))}
@@ -62,14 +65,17 @@ const FloatingActionButton = () => {
 
       {/* Main FAB */}
       <button
+        aria-label={isOpen ? 'Close quick actions' : 'Open quick actions'}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center hover:shadow-[0_0_30px_hsl(var(--primary-glow))]"
+        className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg hover:scale-125 active:scale-95 transition-all duration-300 flex items-center justify-center hover:shadow-neon focus:shadow-neon relative overflow-hidden group"
       >
         {isOpen ? (
           <X className="w-6 h-6" />
         ) : (
           <Plus className="w-6 h-6" />
         )}
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
       </button>
     </div>
   );

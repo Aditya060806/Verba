@@ -4,435 +4,335 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { adjudicateDebate } from "@/lib/ai";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { BookOpen, Info } from "lucide-react";
 
 const Verdict = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showChainOfThought, setShowChainOfThought] = useState(false);
   const navigate = useNavigate();
-
-  const result = {
-    winner: "Government",
-    margin: "Narrow",
-    confidence: 78,
-    motion: "This House Would Ban All Forms of Political Advertising on Social Media"
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(true);
+  const [aiError, setAiError] = useState<string | null>(null);
+  // Example: get debate context, format, roles from navigation or global state
+  // For now, use placeholders (replace with real context from DebateArena)
+  const debateContext = (window as any).__DEBATE_CONTEXT__ || { speeches: [], pois: [] };
+  const location = useLocation();
+  const format = location.state?.format || "AP";
+  const manualLinks: Record<string, string> = {
+    AP: "/Malaysia UADC 2023 - Debate & Judging Handbook.pdf",
+    BP: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf",
+    WSDC: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf"
   };
-
-  const speakerScores = [
-    {
-      role: "Prime Minister",
-      side: "Government",
-      speaker: "You",
-      logic: 4.2,
-      style: 4.0,
-      poi: 3.8,
-      total: 82,
-      feedback: "Strong opening with clear framework. Excellent use of examples. Consider improving POI responses."
-    },
-    {
-      role: "Leader of Opposition",
-      side: "Opposition", 
-      speaker: "AI Opponent",
-      logic: 3.9,
-      style: 4.1,
-      poi: 4.0,
-      total: 79,
-      feedback: "Good rebuttal strategy but missed key Government arguments. Strong delivery throughout."
-    },
-    {
-      role: "Deputy PM",
-      side: "Government",
-      speaker: "AI Teammate",
-      logic: 4.0,
-      style: 3.8,
-      poi: 3.9,
-      total: 78,
-      feedback: "Solid rebuilding of arguments. Could have engaged more with Opposition rebuttals."
-    },
-    {
-      role: "Deputy LO",
-      side: "Opposition",
-      speaker: "AI Opponent",
-      logic: 3.7,
-      style: 3.9,
-      poi: 3.8,
-      total: 76,
-      feedback: "Maintained Opposition line well but needed stronger new material."
-    },
-    {
-      role: "Government Whip",
-      side: "Government",
-      speaker: "AI Teammate",
-      logic: 4.3,
-      style: 4.2,
-      poi: 4.0,
-      total: 85,
-      feedback: "Excellent summary and comparison. Perfect adherence to whip speech rules."
-    },
-    {
-      role: "Opposition Whip",
-      side: "Opposition",
-      speaker: "AI Opponent",
-      logic: 3.8,
-      style: 4.0,
-      poi: 3.7,
-      total: 77,
-      feedback: "Good attempt at crystallizing but couldn't overcome Government's case strength."
-    }
+  const rubricTips: Record<string, string> = {
+    AP: "AP Rubric: Matter (40), Manner (40), Method (20). See manual for details.",
+    BP: "BP Rubric: Matter, Manner, Method, Role Fulfillment. See manual for details.",
+    WSDC: "WSDC Rubric: Content, Style, Strategy, Reply. See manual for details."
+  };
+  const roles = [
+    "Prime Minister", "Leader of Opposition", "Deputy PM", "Deputy LO", "Government Whip", "Opposition Whip"
   ];
-
-  const clashAnalysis = [
-    {
-      topic: "Democratic Integrity",
-      govStrength: 85,
-      oppStrength: 65,
-      winner: "Government",
-      reasoning: "Government provided stronger evidence on social media manipulation"
-    },
-    {
-      topic: "Freedom of Speech",
-      govStrength: 70,
-      oppStrength: 80,
-      winner: "Opposition", 
-      reasoning: "Opposition effectively argued constitutional concerns"
-    },
-    {
-      topic: "Practical Implementation",
-      govStrength: 75,
-      oppStrength: 70,
-      winner: "Government",
-      reasoning: "Government addressed enforceability concerns adequately"
-    },
-    {
-      topic: "Economic Impact",
-      govStrength: 60,
-      oppStrength: 85,
-      winner: "Opposition",
-      reasoning: "Opposition highlighted significant industry disruption"
-    }
+  const manuals = [
+    "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf",
+    "/Malaysia UADC 2023 - Debate & Judging Handbook.pdf",
+    "/WUDC Speaker, Chair, Panelist and Trainee Scales.pdf",
+    "/APD Basics.pdf"
   ];
-
-  const chainOfThought = [
-    "Analyzing argument strength across six speeches...",
-    "Government established clear framework in PM speech",
-    "Opposition challenged framework but not decisively",
-    "Government rebuilt effectively in DPM speech",
-    "Key clash: Democratic integrity vs. free speech",
-    "Government's evidence on manipulation more compelling",
-    "Opposition's economic arguments noted but insufficient",
-    "Government maintained consistency throughout",
-    "Whip speeches: Government clearer on case comparison",
-    "Final assessment: Government wins on balance"
-  ];
+  useEffect(() => {
+    const fetchAdjudication = async () => {
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        const result = await adjudicateDebate({
+          speeches: debateContext.speeches,
+          format,
+          roles,
+          manuals
+        });
+        setAiResult(result);
+      } catch (err: any) {
+        setAiError(err.message || "Failed to get AI adjudication.");
+      } finally {
+        setAiLoading(false);
+      }
+    };
+    fetchAdjudication();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Trigger confetti animation for wins
-    if (result.winner === "Government") {
+    if (aiResult?.winner === "Government") {
       setShowConfetti(true);
       const timer = setTimeout(() => setShowConfetti(false), 3000);
       return () => clearTimeout(timer);
     }
-  }, [result.winner]);
+  }, [aiResult?.winner]);
 
   const getStarRating = (score: number) => {
     return Math.round(score);
   };
 
-  return (
-    <div className="min-h-screen bg-animated-gradient pt-20 relative">
-      {/* Confetti Animation */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-gradient-to-r from-primary to-accent animate-bounce opacity-80"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Result Banner */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className={`inline-flex items-center space-x-3 px-8 py-4 rounded-2xl mb-6 ${
-            result.winner === "Government" 
-              ? "bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30" 
-              : "bg-gradient-to-r from-destructive/20 to-warning/20 border border-destructive/30"
-          }`}>
-            <Trophy className={`w-8 h-8 ${result.winner === "Government" ? "text-primary" : "text-destructive"}`} />
-            <div>
-              <div className="text-2xl font-bold text-gradient">
-                {result.winner === "Government" ? "Victory!" : "Defeat"}
-              </div>
-              <div className="text-sm text-foreground-secondary">
-                {result.winner} wins by {result.margin.toLowerCase()} margin ({result.confidence}% confidence)
-              </div>
-            </div>
+  if (aiLoading) {
+    return (
+      <div className="min-h-screen bg-animated-gradient pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-2xl font-heading font-semibold text-gradient">AI Judge Analyzing...</h2>
+            <p className="text-foreground-secondary">Evaluating your debate performance with mathematical precision</p>
           </div>
-          
-          <h1 className="text-3xl md:text-4xl font-heading font-bold text-gradient mb-4">
-            Round Complete
+        </div>
+      </div>
+    );
+  }
+
+  if (aiError) {
+    return (
+      <div className="min-h-screen bg-animated-gradient pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-heading font-semibold text-destructive mb-4">Adjudication Error</h2>
+            <p className="text-foreground-secondary mb-4">{aiError}</p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-animated-gradient pt-20">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8 animate-fade-in">
+          <h1 className="text-4xl md:text-6xl font-heading font-bold text-gradient mb-4">
+            Debate Verdict
           </h1>
-          <p className="text-lg text-foreground-secondary max-w-3xl mx-auto">
-            {result.motion}
+          <p className="text-xl text-foreground-secondary max-w-2xl mx-auto">
+            AI-powered adjudication with mathematical precision
           </p>
         </div>
 
-        {/* Toggle Controls */}
-        <div className="flex justify-center space-x-6 mb-8">
-          <div className="flex items-center space-x-2">
-            <Switch checked={showHeatmap} onCheckedChange={setShowHeatmap} />
-            <span className="text-sm text-foreground">Clash Heatmap</span>
+        {/* Winner Announcement */}
+        {aiResult && (
+          <div className="neu-card p-8 mb-8 text-center animate-fade-in">
+            <div className="flex items-center justify-center mb-6">
+              <Trophy className="w-16 h-16 text-accent mr-4" />
+              <div>
+                <h2 className="text-3xl font-heading font-bold text-gradient">
+                  {aiResult.winner} Wins!
+                </h2>
+                <p className="text-foreground-secondary capitalize">{aiResult.margin} margin</p>
+              </div>
+            </div>
+            
+            {/* Score Display */}
+            <div className="grid grid-cols-2 gap-8 max-w-md mx-auto">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary">{aiResult.governmentScore}</div>
+                <div className="text-sm text-foreground-secondary">Government</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-accent">{aiResult.oppositionScore}</div>
+                <div className="text-sm text-foreground-secondary">Opposition</div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch checked={showChainOfThought} onCheckedChange={setShowChainOfThought} />
-            <span className="text-sm text-foreground">Chain of Thought</span>
-          </div>
-        </div>
+        )}
 
-        <Tabs defaultValue="scores" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-card/50 border border-card-border max-w-sm sm:max-w-md mx-auto">
-            <TabsTrigger value="scores" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Scores
-            </TabsTrigger>
-            <TabsTrigger value="analysis" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Analysis
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Feedback
-            </TabsTrigger>
-          </TabsList>
+        {/* Detailed Analysis */}
+        {aiResult && (
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="scores">Speaker Scores</TabsTrigger>
+              <TabsTrigger value="clashes">Clash Analysis</TabsTrigger>
+              <TabsTrigger value="feedback">Your Feedback</TabsTrigger>
+            </TabsList>
 
-          {/* Speaker Scores Tab */}
-          <TabsContent value="scores" className="space-y-6">
-            <div className="grid gap-4">
-              {speakerScores.map((speaker, index) => (
-                <div key={index} className="neu-card p-4 sm:p-6 animate-slide-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="grid gap-4 sm:gap-6 lg:grid-cols-4 lg:items-center">
-                    <div>
-                      <h3 className="font-semibold text-lg text-foreground mb-1">{speaker.role}</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          speaker.side === "Government" 
-                            ? "bg-primary/20 text-primary" 
-                            : "bg-accent/20 text-accent"
-                        }`}>
-                          {speaker.side}
-                        </span>
-                        {speaker.speaker === "You" && (
-                          <span className="px-2 py-1 rounded-full bg-success/20 text-success text-xs font-medium">
-                            You
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Overall Feedback */}
+                <div className="neu-card p-6">
+                  <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">Overall Assessment</h3>
+                  <p className="text-foreground-secondary leading-relaxed mb-4">
+                    {aiResult.overallFeedback}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-foreground-secondary">
+                      Based on {format} rubric and mathematical evaluation
+                    </span>
+                  </div>
+                </div>
+
+                {/* Chain of Thought */}
+                <div className="neu-card p-6">
+                  <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">AI Reasoning</h3>
+                  <div className="space-y-2">
+                    {aiResult.chainOfThought.map((thought: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-2">
+                        <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                        <p className="text-sm text-foreground-secondary">{thought}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="scores" className="space-y-6">
+              <div className="grid gap-4">
+                {aiResult.speakerScores.map((speaker: any, index: number) => (
+                  <div key={index} className="neu-card p-4 sm:p-6 animate-slide-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <div className="grid gap-4 sm:gap-6 lg:grid-cols-4 lg:items-center">
+                      <div>
+                        <h3 className="font-semibold text-lg text-foreground mb-1">{speaker.role}</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            speaker.side === "Government" 
+                              ? "bg-primary/20 text-primary" 
+                              : "bg-accent/20 text-accent"
+                          }`}>
+                            {speaker.side}
                           </span>
-                        )}
+                          {speaker.speaker === "You" && (
+                            <span className="px-2 py-1 rounded-full bg-success/20 text-success text-xs font-medium">
+                              You
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Detailed Scores */}
+                      <div className="lg:col-span-3">
+                        <div className="grid gap-3 sm:grid-cols-5">
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-primary">{speaker.matter}</div>
+                            <div className="text-xs text-foreground-secondary">Matter</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-accent">{speaker.manner}</div>
+                            <div className="text-xs text-foreground-secondary">Manner</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-secondary">{speaker.method}</div>
+                            <div className="text-xs text-foreground-secondary">Method</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-warning">{speaker.roleFulfillment}</div>
+                            <div className="text-xs text-foreground-secondary">Role</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gradient">{speaker.totalScore}</div>
+                            <div className="text-xs text-foreground-secondary">Total</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
 
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                      <div className="text-center">
-                        <div className="text-sm text-foreground-secondary mb-1">Logic</div>
-                        <div className="flex justify-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`w-4 h-4 ${
-                                i < getStarRating(speaker.logic) 
-                                  ? "text-primary fill-current" 
-                                  : "text-muted-foreground"
-                              }`} 
-                            />
-                          ))}
+            <TabsContent value="clashes" className="space-y-6">
+              <div className="grid gap-4">
+                {aiResult.clashEvaluations.map((clash: any, index: number) => (
+                  <div key={index} className="neu-card p-6 animate-slide-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">{clash.topic}</h3>
+                      <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium">
+                        Weight: {clash.weight}/10
+                      </span>
+                    </div>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2 mb-4">
+                      <div>
+                        <h4 className="font-semibold text-primary mb-2">Government</h4>
+                        <div className="flex items-center space-x-2">
+                          <Progress value={clash.governmentScore * 100} className="flex-1" />
+                          <span className="text-sm font-medium">{Math.round(clash.governmentScore * 100)}%</span>
                         </div>
-                        <div className="text-xs text-foreground-secondary mt-1">{speaker.logic}/5</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-sm text-foreground-secondary mb-1">Style</div>
-                        <div className="flex justify-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`w-4 h-4 ${
-                                i < getStarRating(speaker.style) 
-                                  ? "text-accent fill-current" 
-                                  : "text-muted-foreground"
-                              }`} 
-                            />
-                          ))}
+                      <div>
+                        <h4 className="font-semibold text-accent mb-2">Opposition</h4>
+                        <div className="flex items-center space-x-2">
+                          <Progress value={clash.oppositionScore * 100} className="flex-1" />
+                          <span className="text-sm font-medium">{Math.round(clash.oppositionScore * 100)}%</span>
                         </div>
-                        <div className="text-xs text-foreground-secondary mt-1">{speaker.style}/5</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm text-foreground-secondary mb-1">POI</div>
-                        <div className="flex justify-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`w-4 h-4 ${
-                                i < getStarRating(speaker.poi) 
-                                  ? "text-secondary fill-current" 
-                                  : "text-muted-foreground"
-                              }`} 
-                            />
-                          ))}
-                        </div>
-                        <div className="text-xs text-foreground-secondary mt-1">{speaker.poi}/5</div>
                       </div>
                     </div>
+                    
+                    <p className="text-sm text-foreground-secondary mb-2">{clash.reasoning}</p>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {clash.evidence.map((evidence: string, i: number) => (
+                        <span key={i} className="px-2 py-1 rounded-full bg-card/50 text-xs text-foreground-secondary">
+                          {evidence}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
 
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gradient mb-1">{speaker.total}</div>
-                      <div className="text-sm text-foreground-secondary">Total Score</div>
+            <TabsContent value="feedback" className="space-y-6">
+              {aiResult.speakerScores.filter((s: any) => s.speaker === "You").map((speaker: any, index: number) => (
+                <div key={index} className="neu-card p-6">
+                  <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">
+                    Your Performance: {speaker.role}
+                  </h3>
+                  <div className="grid gap-6 md:grid-cols-2 mb-6">
+                    <div>
+                      <h4 className="font-semibold text-success mb-3 flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Strengths
+                      </h4>
+                      <div className="space-y-2">
+                        {speaker.strengths?.map((str: string, i: number) => (
+                          <div key={i} className="text-sm text-foreground-secondary">• {str}</div>
+                        ))}
+                      </div>
                     </div>
+                    <div>
+                      <h4 className="font-semibold text-warning mb-3 flex items-center">
+                        <TrendingDown className="w-4 h-4 mr-2" />
+                        Areas for Improvement
+                      </h4>
+                      <div className="space-y-2">
+                        {speaker.improvements?.map((imp: string, i: number) => (
+                          <div key={i} className="text-sm text-foreground-secondary">• {imp}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-card/30">
+                    <p className="text-foreground-secondary leading-relaxed">{speaker.feedback}</p>
                   </div>
                 </div>
               ))}
-            </div>
-          </TabsContent>
-
-          {/* Clash Analysis Tab */}
-          <TabsContent value="analysis" className="space-y-6">
-            {showHeatmap && (
-              <div className="neu-card p-6">
-                <h3 className="text-xl font-heading font-semibold mb-6 text-gradient flex items-center">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Clash Heatmap
-                </h3>
-                <div className="space-y-4">
-                  {clashAnalysis.map((clash, index) => (
-                    <div key={index} className="glass-card p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-foreground">{clash.topic}</h4>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          clash.winner === "Government" 
-                            ? "bg-primary/20 text-primary" 
-                            : "bg-accent/20 text-accent"
-                        }`}>
-                          {clash.winner} wins
-                        </span>
-                      </div>
-                      
-                      <div className="grid gap-4 sm:grid-cols-2 mb-3">
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-foreground">Government</span>
-                            <span className="text-sm font-medium text-primary">{clash.govStrength}%</span>
-                          </div>
-                          <Progress value={clash.govStrength} className="h-2" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-foreground">Opposition</span>
-                            <span className="text-sm font-medium text-accent">{clash.oppStrength}%</span>
-                          </div>
-                          <Progress value={clash.oppStrength} className="h-2" />
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-foreground-secondary">{clash.reasoning}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {showChainOfThought && (
-              <div className="neu-card p-6">
-                <h3 className="text-xl font-heading font-semibold mb-6 text-gradient flex items-center">
-                  <Eye className="w-5 h-5 mr-2" />
-                  AI Judge Chain of Thought
-                </h3>
-                <div className="space-y-3">
-                  {chainOfThought.map((thought, index) => (
-                    <div 
-                      key={index} 
-                      className="flex items-start space-x-3 p-3 rounded-xl bg-card/30 animate-slide-in-up"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-xs font-medium text-primary">{index + 1}</span>
-                      </div>
-                      <p className="text-sm text-foreground-secondary">{thought}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Individual Feedback Tab */}
-          <TabsContent value="feedback" className="space-y-6">
-            {speakerScores.filter(s => s.speaker === "You").map((speaker, index) => (
-              <div key={index} className="neu-card p-6">
-                <h3 className="text-xl font-heading font-semibold mb-4 text-gradient">
-                  Your Performance: {speaker.role}
-                </h3>
-                
-                <div className="grid gap-6 md:grid-cols-2 mb-6">
-                  <div>
-                    <h4 className="font-semibold text-success mb-3 flex items-center">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Strengths
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="text-sm text-foreground-secondary">• Strong logical progression</div>
-                      <div className="text-sm text-foreground-secondary">• Effective use of examples</div>
-                      <div className="text-sm text-foreground-secondary">• Clear structure and signposting</div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold text-warning mb-3 flex items-center">
-                      <TrendingDown className="w-4 h-4 mr-2" />
-                      Areas for Improvement
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="text-sm text-foreground-secondary">• POI response timing</div>
-                      <div className="text-sm text-foreground-secondary">• Statistical evidence depth</div>
-                      <div className="text-sm text-foreground-secondary">• Rebuttal engagement</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-card/30">
-                  <p className="text-foreground-secondary leading-relaxed">{speaker.feedback}</p>
-                </div>
-              </div>
-            ))}
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <Button className="btn-primary flex items-center space-x-2">
-            <Play className="w-4 h-4" />
-            <span>Replay Summary</span>
+        <div className="flex justify-center space-x-4 mt-8">
+          <Button onClick={() => navigate('/debate-arena')} className="btn-primary">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            New Round
           </Button>
-          <Button variant="outline" className="border-card-border hover:border-secondary flex items-center space-x-2">
-            <Download className="w-4 h-4" />
-            <span>Export Report</span>
+          <Button onClick={() => navigate('/past-rounds')} variant="outline" className="border-card-border">
+            <Eye className="w-4 h-4 mr-2" />
+            View History
           </Button>
-          <Button 
-            variant="outline" 
-            className="border-card-border hover:border-primary flex items-center space-x-2"
-            onClick={() => navigate("/case-prep")}
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>New Round</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="border-card-border hover:border-accent flex items-center space-x-2"
-            onClick={() => navigate("/")}
-          >
-            <Home className="w-4 h-4" />
-            <span>Home</span>
+          <Button onClick={() => navigate('/')} variant="outline" className="border-card-border">
+            <Home className="w-4 h-4 mr-2" />
+            Home
           </Button>
         </div>
       </div>

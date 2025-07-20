@@ -17,6 +17,11 @@ import PastRounds from "./pages/PastRounds";
 import Profile from "./pages/Profile";
 import MotionVault from "./pages/MotionVault";
 import Leaderboard from "./pages/Leaderboard";
+import Learning from "./pages/Learning";
+import BritishParliamentary from "./pages/BritishParliamentary";
+import PeerMatch from "./pages/PeerMatch";
+import LearningModule from "./pages/LearningModule";
+import DailyChallenge from "./pages/DailyChallenge";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
@@ -45,8 +50,13 @@ const App = () => (
                   <main className="relative">
                     <Routes>
                       <Route path="/" element={<Home />} />
+                      <Route path="/daily-challenge" element={<DailyChallenge />} />
                       <Route path="/motion-vault" element={<MotionVault />} />
                       <Route path="/leaderboard" element={<Leaderboard />} />
+                      <Route path="/learning" element={<Learning />} />
+                      <Route path="/british-parliamentary" element={<BritishParliamentary />} />
+                      <Route path="/peer-match" element={<PeerMatch />} />
+                      <Route path="/module/:moduleId" element={<LearningModule />} />
                       
                       {/* Protected Routes */}
                       <Route path="/case-prep" element={

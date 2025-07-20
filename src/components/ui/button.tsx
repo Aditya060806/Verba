@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-primary to-primary-dark text-primary-foreground hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--primary-glow))] transition-all duration-300",
+        default: "bg-gradient-to-r from-primary to-primary-dark text-primary-foreground hover:scale-110 hover:shadow-neon focus:scale-110 focus:shadow-neon transition-all duration-300 relative overflow-hidden",
         destructive:
-          "bg-gradient-to-r from-destructive to-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-300",
+          "bg-gradient-to-r from-destructive to-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-110 focus:scale-110 transition-all duration-300 relative overflow-hidden",
         outline:
-          "border border-primary/20 bg-glass hover:bg-primary/10 hover:border-primary/40 hover:scale-105 transition-all duration-300",
+          "border border-primary/20 bg-glass hover:bg-primary/10 hover:border-primary/40 hover:scale-110 focus:scale-110 transition-all duration-300 relative overflow-hidden",
         secondary:
-          "bg-gradient-to-r from-secondary to-secondary-dark text-secondary-foreground hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--secondary))] transition-all duration-300",
-        ghost: "hover:bg-primary/10 hover:text-primary hover:scale-105 transition-all duration-300",
-        link: "text-primary underline-offset-4 hover:underline hover:scale-105 transition-all duration-300",
+          "bg-gradient-to-r from-secondary to-secondary-dark text-secondary-foreground hover:scale-110 hover:shadow-neon focus:scale-110 focus:shadow-neon transition-all duration-300 relative overflow-hidden",
+        ghost: "hover:bg-primary/10 hover:text-primary hover:scale-110 focus:scale-110 transition-all duration-300 relative overflow-hidden",
+        link: "text-primary underline-offset-4 hover:underline hover:scale-110 focus:scale-110 transition-all duration-300 relative overflow-hidden",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -47,7 +47,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
-      />
+      >
+        {props.children}
+        {/* Shimmer effect overlay for primary/secondary */}
+        {(variant === "default" || variant === "secondary") && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+        )}
+      </Comp>
     )
   }
 )

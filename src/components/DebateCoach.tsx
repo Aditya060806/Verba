@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { getDebateCoachResponse } from "@/lib/ai";
 
 interface Message {
   id: string;
@@ -312,33 +313,6 @@ const DebateCoach = () => {
     }
   }, [isListening, toast]);
 
-  // Simulate AI response
-  const generateAIResponse = useCallback(async (userMessage: string): Promise<string> => {
-    // This would connect to a real AI service in production
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-
-    const responses = [
-      "Excellent question! In debate, that's exactly the kind of strategic thinking that wins rounds. Let me break down why that approach works...",
-      "That's a sophisticated point. Here's how top debaters handle similar situations: First, acknowledge the complexity, then...",
-      "I love that you're thinking about this! That technique is actually used by many successful debaters. The key is to...",
-      "Great insight! You're developing strong debate instincts. To build on that idea, consider also...",
-      "That's exactly right! You're grasping one of the most important concepts in competitive debate. Now, to take it further..."
-    ];
-
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    
-    // Add context-specific advice based on keywords
-    if (userMessage.toLowerCase().includes('opening')) {
-      return randomResponse + " For openings specifically, remember the three pillars: Define, Divide, and Develop. Define key terms, divide the debate into clear issues, and develop your framework for analysis.";
-    } else if (userMessage.toLowerCase().includes('rebuttal')) {
-      return randomResponse + " For effective rebuttals, use the STAR method: State their argument, Tell us why it's wrong, Argue your alternative, and Reinforce why your side wins.";
-    } else if (userMessage.toLowerCase().includes('evidence')) {
-      return randomResponse + " When presenting evidence, always include: Source credibility, recency of the data, sample size or scope, and most importantly - explain why it matters to the debate.";
-    }
-
-    return randomResponse + " Remember, great debaters don't just present arguments - they tell a compelling story about why their world is better.";
-  }, []);
-
   // Save conversation session
   const saveConversationSession = useCallback(() => {
     if (messages.length === 0) return;
@@ -389,8 +363,16 @@ const DebateCoach = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await generateAIResponse(userMessage.content);
-      
+      // Use OpenRouter Claude 3 Haiku for live AI feedback
+      const aiResponse = await getDebateCoachResponse({
+        prompt: userMessage.content,
+        context: {
+          sessionId: currentSessionId,
+          previousMessages: messages,
+          mode,
+          practiceScenario
+        }
+      });
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -399,26 +381,23 @@ const DebateCoach = () => {
         category: 'advice',
         sessionId: currentSessionId
       };
-
       setMessages(prev => [...prev, aiMessage]);
-
       // Auto-speak if enabled
       if (voiceSettings.autoSpeak && voiceSettings.enabled) {
         speak(aiResponse);
       }
-
       // Save session and update metrics
       saveConversationSession();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to get response. Please try again.",
+        description: error.message || "Failed to get response. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, generateAIResponse, voiceSettings, speak, toast, currentSessionId, saveConversationSession]);
+  }, [inputValue, isLoading, voiceSettings, speak, toast, currentSessionId, saveConversationSession, messages, mode, practiceScenario]);
 
   // Handle key press
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {

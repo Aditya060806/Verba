@@ -1,80 +1,72 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Lightbulb, Target, Users, BookOpen, Zap, Sparkles, ChevronDown, Clock, Trophy } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Lightbulb, Target, Users, BookOpen, Zap, Sparkles, ChevronDown, Clock, Trophy, Puzzle, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PrepTemplates from "@/components/PrepTemplates";
+import ArgumentBuilder from "@/components/ArgumentBuilder";
 import DebateCoach from "@/components/DebateCoach";
+
+
+import { generateDebateCase } from "@/lib/ai";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const CasePrep = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [format, setFormat] = useState(location.state?.format || "AP");
+  const manualLinks: Record<string, string> = {
+    AP: "/Malaysia UADC 2023 - Debate & Judging Handbook.pdf",
+    BP: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf",
+    WSDC: "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf"
+  };
+  const formatTips: Record<string, string> = {
+    AP: "AP: 3 speakers per side, 7 min speeches, POIs allowed after 1st minute.",
+    BP: "BP: 4 teams, 2 per side, 7 min speeches, no POIs during whip speeches.",
+    WSDC: "WSDC: 3 speakers per side, 8 min speeches, reply speeches, POIs allowed."
+  };
   const [motion, setMotion] = useState("");
-  const [format, setFormat] = useState("AP");
   const [side, setSide] = useState("Government");
   const [level, setLevel] = useState("Intermediate");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [caseData, setCaseData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     setGenerating(true);
-    // Simulate AI generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setGenerated(true);
-    setGenerating(false);
+    setError(null);
+    setCaseData(null);
+    try {
+      // Pass manuals as context (paths to PDFs in /public)
+      const manuals = [
+        "/WUDC Debating & Judging Manual (Panama WUDC 2025).pdf",
+        "/Malaysia UADC 2023 - Debate & Judging Handbook.pdf",
+        "/WUDC Speaker, Chair, Panelist and Trainee Scales.pdf",
+        "/APD Basics.pdf"
+      ];
+      const result = await generateDebateCase({
+        motion: motion || sampleMotion,
+        format,
+        side,
+        level,
+        manuals
+      });
+      setCaseData(result);
+      setGenerated(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to generate case. Please try again later.");
+      setGenerated(false);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const sampleMotion = "This House Would Ban All Forms of Political Advertising on Social Media";
 
-  const demoCase = {
-    arguments: [
-      {
-        title: "Democratic Integrity",
-        content: "Political advertising on social media undermines democratic processes through micro-targeting and echo chambers.",
-        strength: 92
-      },
-      {
-        title: "Misinformation Prevention",
-        content: "Social media ads are vectors for spreading false information that voters cannot easily fact-check.",
-        strength: 87
-      },
-      {
-        title: "Equal Access",
-        content: "Wealthy candidates gain unfair advantages through sophisticated ad campaigns, reducing electoral equality.",
-        strength: 85
-      }
-    ],
-    rebuttals: [
-      {
-        opposition: "Freedom of Speech Violation",
-        response: "Political advertising is commercial speech with legitimate restrictions for public welfare.",
-        effectiveness: 89
-      },
-      {
-        opposition: "Practical Enforcement Issues",
-        response: "Successful content moderation systems already exist and can be adapted for political content.",
-        effectiveness: 82
-      }
-    ],
-    examples: [
-      {
-        title: "Cambridge Analytica Scandal",
-        description: "Demonstrated how political ads can manipulate voter behavior through psychological profiling.",
-        relevance: 95
-      },
-      {
-        title: "Brazil 2018 Elections",
-        description: "WhatsApp misinformation campaigns significantly influenced electoral outcomes.",
-        relevance: 88
-      }
-    ],
-    stakeholders: [
-      { name: "Voters", interest: "Access to accurate information", impact: "High" },
-      { name: "Political Parties", interest: "Campaign effectiveness", impact: "High" },
-      { name: "Social Media Platforms", interest: "Revenue and regulation", impact: "Medium" },
-      { name: "Democracy Watchdogs", interest: "Electoral integrity", impact: "High" }
-    ]
-  };
+
 
   return (
     <div className="min-h-screen bg-animated-gradient pt-20">
@@ -87,16 +79,73 @@ const CasePrep = () => {
           <p className="text-xl text-foreground-secondary max-w-2xl mx-auto">
             AI-powered argument generation and case building for competitive debate
           </p>
+          <div className="flex justify-center space-x-4 items-center mt-4">
+            <span className="px-4 py-2 rounded-xl bg-primary/20 text-primary font-medium">{format === "AP" ? "Asian Parliamentary" : format === "BP" ? "British Parliamentary" : "World Schools"}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <a href={manualLinks[format]} target="_blank" rel="noopener noreferrer" className="underline text-primary">View {format} Manual</a>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Lightbulb className="w-5 h-5 text-accent" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {formatTips[format]}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-xl border border-red-300 animate-fade-in">
+            {error}
+          </div>
+        )}
+        {/* Case Output */}
+        {caseData && generated && !error && (
+          <div className="mb-8 animate-fade-in">
+            {/* Render arguments, rebuttals, examples, stakeholders, etc. from caseData */}
+            {/* This will be filled in after Sarvam AI integration is live */}
+            <pre className="bg-card/50 p-4 rounded-xl overflow-x-auto text-sm border border-card-border">
+              {JSON.stringify(caseData, null, 2)}
+            </pre>
+          </div>
+        )}
 
-        <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
-          {/* Input Panel */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="neu-card p-6 sticky top-24">
-              <h2 className="text-2xl font-heading font-semibold mb-6 flex items-center text-gradient">
-                <Zap className="w-6 h-6 mr-2" />
-                Setup Your Case
-              </h2>
+        <Tabs defaultValue="case-generator" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="case-generator" className="flex items-center space-x-2">
+              <Zap className="w-4 h-4" />
+              <span>Case Generator</span>
+            </TabsTrigger>
+            <TabsTrigger value="argument-builder" className="flex items-center space-x-2">
+              <Puzzle className="w-4 h-4" />
+              <span>Argument Builder</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center space-x-2">
+              <Brain className="w-4 h-4" />
+              <span>Templates</span>
+            </TabsTrigger>
+
+          </TabsList>
+
+          <TabsContent value="case-generator" className="space-y-6">
+            <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
+              {/* Input Panel */}
+              <div className="lg:col-span-1 order-2 lg:order-1">
+                <div className="neu-card p-6 sticky top-24">
+                  <h2 className="text-2xl font-heading font-semibold mb-6 flex items-center text-gradient">
+                    <Zap className="w-6 h-6 mr-2" />
+                    Setup Your Case
+                  </h2>
 
               {/* Motion Input */}
               <div className="mb-6">
@@ -218,23 +267,27 @@ const CasePrep = () => {
                     Core Arguments
                   </h3>
                   <div className="space-y-4">
-                    {demoCase.arguments.map((arg, index) => (
+                    {caseData?.arguments?.map((arg: any, index: number) => (
                       <div key={index} className="glass-card p-4 hover:shadow-lg transition-all duration-300">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-semibold text-lg text-foreground">{arg.title}</h4>
                           <div className="flex items-center space-x-2">
-                            <div className="text-sm text-accent font-medium">{arg.strength}%</div>
+                            <div className="text-sm text-accent font-medium">{arg.strength || 85}%</div>
                             <div className="w-16 h-2 bg-card-border rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000"
-                                style={{ width: `${arg.strength}%` }}
+                                style={{ width: `${arg.strength || 85}%` }}
                               ></div>
                             </div>
                           </div>
                         </div>
                         <p className="text-foreground-secondary leading-relaxed">{arg.content}</p>
                       </div>
-                    ))}
+                    )) || (
+                      <div className="text-center py-8 text-foreground-secondary">
+                        Generate a case to see arguments here
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -245,17 +298,21 @@ const CasePrep = () => {
                     Rebuttals & Responses
                   </h3>
                   <div className="space-y-4">
-                    {demoCase.rebuttals.map((rebuttal, index) => (
+                    {caseData?.rebuttals?.map((rebuttal: any, index: number) => (
                       <div key={index} className="glass-card p-4">
                         <div className="mb-3">
                           <h4 className="font-semibold text-foreground mb-1">Opposition: {rebuttal.opposition}</h4>
                           <div className="flex items-center space-x-2">
-                            <div className="text-sm text-secondary font-medium">Effectiveness: {rebuttal.effectiveness}%</div>
+                            <div className="text-sm text-secondary font-medium">Effectiveness: {rebuttal.effectiveness || 80}%</div>
                           </div>
                         </div>
                         <p className="text-foreground-secondary leading-relaxed">{rebuttal.response}</p>
                       </div>
-                    ))}
+                    )) || (
+                      <div className="text-center py-8 text-foreground-secondary">
+                        Generate a case to see rebuttals here
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -266,17 +323,21 @@ const CasePrep = () => {
                     Supporting Examples
                   </h3>
                    <div className="grid gap-4 sm:grid-cols-2">
-                     {demoCase.examples.map((example, index) => (
+                     {caseData?.examples?.map((example: any, index: number) => (
                       <div key={index} className="glass-card p-4">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-semibold text-foreground">{example.title}</h4>
                           <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                            {example.relevance}% relevant
+                            {example.relevance || 85}% relevant
                           </span>
                         </div>
                         <p className="text-foreground-secondary text-sm leading-relaxed">{example.description}</p>
                       </div>
-                    ))}
+                    )) || (
+                      <div className="text-center py-8 text-foreground-secondary">
+                        Generate a case to see examples here
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -287,7 +348,7 @@ const CasePrep = () => {
                     Stakeholder Analysis
                   </h3>
                    <div className="grid gap-4 sm:grid-cols-2">
-                     {demoCase.stakeholders.map((stakeholder, index) => (
+                     {caseData?.stakeholders?.map((stakeholder: any, index: number) => (
                       <div key={index} className="glass-card p-4">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="font-semibold text-foreground">{stakeholder.name}</h4>
@@ -296,12 +357,16 @@ const CasePrep = () => {
                             stakeholder.impact === "Medium" ? "bg-warning/20 text-warning" :
                             "bg-success/20 text-success"
                           }`}>
-                            {stakeholder.impact} Impact
+                            {stakeholder.impact || "Medium"} Impact
                           </span>
                         </div>
                         <p className="text-foreground-secondary text-sm">{stakeholder.interest}</p>
                       </div>
-                    ))}
+                    )) || (
+                      <div className="text-center py-8 text-foreground-secondary">
+                        Generate a case to see stakeholders here
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -320,6 +385,18 @@ const CasePrep = () => {
             )}
           </div>
         </div>
+      </TabsContent>
+
+      <TabsContent value="argument-builder" className="space-y-6">
+        <ArgumentBuilder />
+      </TabsContent>
+
+      <TabsContent value="templates" className="space-y-6">
+        <PrepTemplates />
+      </TabsContent>
+      
+
+    </Tabs>
       </div>
       
       {/* Enhanced Debate Coach */}
