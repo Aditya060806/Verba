@@ -28,6 +28,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getDebateCoachResponse } from "@/lib/ai";
+import CoachHeader from "./CoachHeader";
+import CoachChat from "./CoachChat";
+import CoachTips from "./CoachTips";
+import CoachPractice from "./CoachPractice";
+import CoachHistory from "./CoachHistory";
+import CoachAnalytics from "./CoachAnalytics";
 
 interface Message {
   id: string;
@@ -453,6 +459,18 @@ const DebateCoach = () => {
     });
   }, [toast]);
 
+  // Export messages handler for CoachHistory
+  const exportMessages = useCallback(() => {
+    const dataStr = JSON.stringify(messages, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `debate-chat-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-40">
@@ -486,614 +504,67 @@ const DebateCoach = () => {
           : 'w-[420px] max-w-[calc(100vw-3rem)] max-h-[85vh]'
       } neu-card border border-primary/20 flex flex-col transition-all duration-300`}>
         <CardHeader className="pb-3 shrink-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-heading text-gradient flex items-center">
-              <Bot className="w-5 h-5 mr-2" />
-              AI Debate Coach
-            </CardTitle>
-            <div className="flex items-center space-x-2">
-              {/* Voice toggle */}
-              {isSpeaking && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={stopSpeaking}
-                  className="hover:bg-card-secondary text-destructive"
-                  title="Stop speaking"
-                >
-                  <VolumeX className="w-4 h-4" />
-                </Button>
-              )}
-              
-              {/* Settings */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="hover:bg-card-secondary">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel>Voice Settings</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="p-3 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="voice-enabled" className="text-sm">Enable Voice</Label>
-                      <Switch
-                        id="voice-enabled"
-                        checked={voiceSettings.enabled}
-                        onCheckedChange={(checked) => 
-                          setVoiceSettings(prev => ({ ...prev, enabled: checked }))
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="auto-speak" className="text-sm">Auto-speak</Label>
-                      <Switch
-                        id="auto-speak"
-                        checked={voiceSettings.autoSpeak}
-                        onCheckedChange={(checked) => 
-                          setVoiceSettings(prev => ({ ...prev, autoSpeak: checked }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Speed: {voiceSettings.speed.toFixed(1)}x</Label>
-                      <Slider
-                        value={[voiceSettings.speed]}
-                        onValueChange={([value]) => 
-                          setVoiceSettings(prev => ({ ...prev, speed: value }))
-                        }
-                        min={0.5}
-                        max={2}
-                        step={0.1}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Volume: {Math.round(voiceSettings.volume * 100)}%</Label>
-                      <Slider
-                        value={[voiceSettings.volume]}
-                        onValueChange={([value]) => 
-                          setVoiceSettings(prev => ({ ...prev, volume: value }))
-                        }
-                        min={0}
-                        max={1}
-                        step={0.1}
-                      />
-                    </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsOpen(false)}
-                className="hover:bg-card-secondary"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Enhanced Mode Toggle */}
-          <div className="grid grid-cols-5 gap-1 p-1 bg-card-secondary rounded-lg mt-2">
-            {[
-              { id: 'chat', icon: MessageSquare, label: 'Chat' },
-              { id: 'tips', icon: Lightbulb, label: 'Tips' },
-              { id: 'practice', icon: Target, label: 'Practice' },
-              { id: 'history', icon: Clock, label: 'History' },
-              { id: 'analytics', icon: BarChart3, label: 'Stats' }
-            ].map((m) => (
-              <Button
-                key={m.id}
-                variant={mode === m.id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setMode(m.id as any)}
-                className="text-xs h-8 p-1"
-                title={m.label}
-                aria-label={m.label}
-              >
-                <m.icon className="w-3 h-3" />
-              </Button>
-            ))}
-          </div>
-
-          {/* Expand/Collapse Toggle */}
-          <div className="flex justify-between items-center mt-2">
-            <div className="text-xs text-foreground-secondary">
-              {messages.length > 0 && `${messages.length} messages`}
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs p-1"
-              title={isExpanded ? "Collapse" : "Expand"}
-              aria-label={isExpanded ? "Collapse" : "Expand"}
-            >
-              {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-            </Button>
-          </div>
+          <CoachHeader
+            mode={mode}
+            setMode={setMode as (mode: string) => void}
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+            voiceSettings={voiceSettings}
+            setVoiceSettings={setVoiceSettings}
+            isSpeaking={isSpeaking}
+            stopSpeaking={stopSpeaking}
+            setIsOpen={setIsOpen}
+            messageCount={messages.length}
+          />
         </CardHeader>
-
         <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-          {mode === 'chat' && (
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4 custom-scrollbar overflow-y-auto max-h-[50vh] min-h-[200px]">
-                {messages.length === 0 ? (
-                  <div className="text-center py-8 text-foreground-secondary">
-                    <Bot className="w-12 h-12 mx-auto mb-3 text-primary" />
-                    <h3 className="font-semibold mb-2">Hi! I'm your AI Debate Coach</h3>
-                    <p className="text-sm leading-relaxed">
-                      Ask me anything about debate strategy, argument structure, rebuttals, or practice with me!
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setInputValue("How do I structure a strong opening statement?")}
-                        className="text-xs"
-                      >
-                        Opening Strategy
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setInputValue("What's the best way to rebut an argument?")}
-                        className="text-xs"
-                      >
-                        Rebuttal Tips
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setInputValue("Help me practice my delivery")}
-                        className="text-xs"
-                      >
-                        Practice Session
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                            message.type === 'user'
-                              ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground'
-                              : 'bg-card-secondary border border-card-border'
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            {message.type === 'ai' && (
-                              <Bot className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                {message.content}
-                              </p>
-                              <div className="flex items-center justify-between mt-2 text-xs opacity-70">
-                                <span>{message.timestamp.toLocaleTimeString()}</span>
-                                {message.type === 'ai' && (
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => speak(message.content)}
-                                      className="h-6 w-6 p-0 hover:bg-primary/10"
-                                      title="Read aloud"
-                                    >
-                                      <Volume2 className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => copyMessage(message.content)}
-                                      className="h-6 w-6 p-0 hover:bg-primary/10"
-                                      title="Copy"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => rateMessage(message.id, true)}
-                                      className={`h-6 w-6 p-0 hover:bg-success/10 ${
-                                        message.helpful === true ? 'text-success' : ''
-                                      }`}
-                                      title="Helpful"
-                                    >
-                                      <ThumbsUp className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => rateMessage(message.id, false)}
-                                      className={`h-6 w-6 p-0 hover:bg-destructive/10 ${
-                                        message.helpful === false ? 'text-destructive' : ''
-                                      }`}
-                                      title="Not helpful"
-                                    >
-                                      <ThumbsDown className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-card-secondary border border-card-border rounded-2xl px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Bot className="w-4 h-4 text-primary" />
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </ScrollArea>
-
-              {/* Input */}
-              <div className="p-4 border-t border-card-border">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      placeholder="Ask me about debate strategy, or start practicing..."
-                      className="min-h-[44px] max-h-32 resize-none pr-12 rounded-xl"
-                      disabled={isLoading}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleVoiceInput}
-                      className={`absolute right-2 top-2 h-7 w-7 p-0 ${
-                        isListening ? 'text-destructive' : 'text-foreground-secondary'
-                      }`}
-                      title={isListening ? "Stop listening" : "Voice input"}
-                      disabled={isLoading}
-                    >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="h-11 px-4 rounded-xl bg-gradient-to-r from-primary to-accent hover:shadow-lg"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {mode === 'tips' && (
-            <div className="p-4 space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                    {(() => {
-                      const IconComponent = debateTips[currentTip].icon;
-                      return <IconComponent className="w-6 h-6 text-primary" />;
-                    })()}
-                  </div>
-                  <Badge className="bg-primary/20 text-primary border-primary/30">
-                    {debateTips[currentTip].difficulty}
-                  </Badge>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg text-foreground mb-2">
-                    {debateTips[currentTip].title}
-                  </h3>
-                  <p className="text-sm text-foreground-secondary leading-relaxed mb-3">
-                    {debateTips[currentTip].content}
-                  </p>
-                  
-                  <div className="p-3 rounded-lg bg-card/50 border border-card-border mb-3">
-                    <div className="text-xs font-medium text-primary mb-1">Example:</div>
-                    <p className="text-xs text-foreground-secondary italic leading-relaxed">
-                      {debateTips[currentTip].example}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-primary">Key Tips:</div>
-                    <ul className="space-y-1">
-                      {debateTips[currentTip].tips.map((tip, index) => (
-                        <li key={index} className="text-xs text-foreground-secondary flex items-start gap-2">
-                          <Star className="w-3 h-3 text-accent shrink-0 mt-0.5" />
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-4 border-t border-card-border">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentTip((prev) => (prev - 1 + debateTips.length) % debateTips.length)}
-                    className="border-card-border hover:border-primary"
-                  >
-                    Previous
-                  </Button>
-                  
-                  <span className="text-xs text-foreground-secondary">
-                    {currentTip + 1} of {debateTips.length}
-                  </span>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentTip((prev) => (prev + 1) % debateTips.length)}
-                    className="border-card-border hover:border-primary"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {mode === 'practice' && (
-            <div className="p-4 space-y-4">
-              <div className="text-center">
-                <Target className="w-12 h-12 mx-auto mb-3 text-primary" />
-                <h3 className="font-semibold mb-2">Practice Sessions</h3>
-                <p className="text-sm text-foreground-secondary">
-                  Choose a practice mode to improve your debate skills
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {practiceScenarios.map((scenario) => (
-                  <Card key={scenario.id} className="p-4 hover:border-primary/30 transition-colors cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
-                        {scenario.id === 'opening' && <Target className="w-5 h-5 text-primary" />}
-                        {scenario.id === 'rebuttal' && <Shield className="w-5 h-5 text-primary" />}
-                        {scenario.id === 'crossfire' && <Zap className="w-5 h-5 text-primary" />}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-sm mb-1">{scenario.title}</h4>
-                        <p className="text-xs text-foreground-secondary mb-3">
-                          {scenario.description}
-                        </p>
-                        <Button
-                          size="sm"
-                          onClick={() => startPractice(scenario.id)}
-                          className="bg-gradient-to-r from-primary to-accent text-xs h-8"
-                        >
-                          Start Practice
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t border-card-border">
-                <div className="text-center text-xs text-foreground-secondary">
-                  <Timer className="w-4 h-4 inline mr-1" />
-                  Practice sessions include real-time feedback and scoring
-                </div>
-              </div>
-            </div>
-          )}
-
-          {mode === 'history' && (
-            <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-primary" />
-                  Conversation History
-                </h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const dataStr = JSON.stringify(messages, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(dataBlob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `debate-chat-${new Date().toISOString().split('T')[0]}.json`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="text-xs"
-                >
-                  <Download className="w-3 h-3 mr-1" />
-                  Export
-                </Button>
-              </div>
-
-              {/* Search and Filter */}
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search className="w-3 h-3 absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-secondary" />
-                  <input
-                    type="text"
-                    placeholder="Search conversations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 text-xs border border-card-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {['all', 'advice', 'practice', 'questions'].map((category) => (
-                    <Button
-                      key={category}
-                      variant={filterCategory === category ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFilterCategory(category)}
-                      className="text-xs h-6"
-                    >
-                      {category}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sessions List */}
-              <ScrollArea className="h-64">
-                {conversationSessions.length === 0 ? (
-                  <div className="text-center py-8 text-foreground-secondary">
-                    <Archive className="w-8 h-8 mx-auto mb-2" />
-                    <p className="text-sm">No conversation history yet</p>
-                    <p className="text-xs">Start chatting to build your history!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {conversationSessions
-                      .filter(session => 
-                        session.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                        (filterCategory === 'all' || session.category === filterCategory)
-                      )
-                      .map((session) => (
-                        <Card key={session.id} className="p-3 hover:border-primary/30 transition-colors cursor-pointer">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm mb-1">{session.title}</h4>
-                              <p className="text-xs text-foreground-secondary mb-2">
-                                {session.messageCount} messages • {session.category}
-                              </p>
-                              <div className="text-xs text-foreground-secondary">
-                                {session.timestamp.toLocaleDateString()} • {session.lastActivity.toLocaleTimeString()}
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {session.category}
-                            </Badge>
-                          </div>
-                        </Card>
-                      ))}
-                  </div>
-                )}
-              </ScrollArea>
-
-              <div className="pt-4 border-t border-card-border">
-                <div className="text-center text-xs text-foreground-secondary">
-                  <MessageSquarePlus className="w-4 h-4 inline mr-1" />
-                  {conversationSessions.length} total conversations
-                </div>
-              </div>
-            </div>
-          )}
-
-          {mode === 'analytics' && (
-            <div className="p-4 space-y-4">
-              <div className="text-center">
-                <BarChart3 className="w-12 h-12 mx-auto mb-3 text-primary" />
-                <h3 className="font-semibold mb-2">Performance Analytics</h3>
-                <p className="text-sm text-foreground-secondary">
-                  Track your debate improvement over time
-                </p>
-              </div>
-
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="p-3 text-center">
-                  <Award className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="text-lg font-bold text-gradient">{debateMetrics.totalSessions}</div>
-                  <div className="text-xs text-foreground-secondary">Total Sessions</div>
-                </Card>
-                <Card className="p-3 text-center">
-                  <TrendingUp className="w-6 h-6 mx-auto mb-2 text-success" />
-                  <div className="text-lg font-bold text-gradient">{debateMetrics.averageScore.toFixed(1)}</div>
-                  <div className="text-xs text-foreground-secondary">Avg Score</div>
-                </Card>
-                <Card className="p-3 text-center">
-                  <Timer className="w-6 h-6 mx-auto mb-2 text-accent" />
-                  <div className="text-lg font-bold text-gradient">{Math.round(debateMetrics.practiceTime / 60)}h</div>
-                  <div className="text-xs text-foreground-secondary">Practice Time</div>
-                </Card>
-                <Card className="p-3 text-center">
-                  <Brain className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                  <div className="text-lg font-bold text-gradient">{debateMetrics.strongestAreas.length}</div>
-                  <div className="text-xs text-foreground-secondary">Strong Areas</div>
-                </Card>
-              </div>
-
-              {/* Progress Visualization */}
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Opening Statements</span>
-                    <span>85%</span>
-                  </div>
-                  <Progress value={85} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Rebuttals</span>
-                    <span>72%</span>
-                  </div>
-                  <Progress value={72} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Evidence Analysis</span>
-                    <span>68%</span>
-                  </div>
-                  <Progress value={68} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Delivery Confidence</span>
-                    <span>79%</span>
-                  </div>
-                  <Progress value={79} className="h-2" />
-                </div>
-              </div>
-
-              {/* Improvement Areas */}
-              <div>
-                <h4 className="font-medium text-sm mb-2 flex items-center">
-                  <Target className="w-4 h-4 mr-1 text-primary" />
-                  Focus Areas
-                </h4>
-                <div className="space-y-2">
-                  {['Evidence Quality', 'Counterargument Strength', 'Time Management'].map((area, index) => (
-                    <div key={area} className="flex items-center justify-between p-2 bg-card-secondary rounded-lg">
-                      <span className="text-xs">{area}</span>
-                      <Badge variant="outline" className="text-xs">
-                        Priority {index + 1}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-card-border">
-                <div className="text-center text-xs text-foreground-secondary">
-                  <Sparkles className="w-4 h-4 inline mr-1" />
-                  Data updated in real-time
-                </div>
-              </div>
-            </div>
-          )}
+          <div key={mode} className="w-full h-full animate-fade-in animate-slide-in-up">
+            {mode === 'chat' && (
+              <CoachChat
+                messages={messages}
+                isLoading={isLoading}
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                handleKeyPress={handleKeyPress}
+                sendMessage={sendMessage}
+                toggleVoiceInput={toggleVoiceInput}
+                isListening={isListening}
+                speak={speak}
+                copyMessage={copyMessage}
+                rateMessage={rateMessage}
+                textareaRef={textareaRef}
+                messagesEndRef={messagesEndRef}
+                isSpeaking={isSpeaking}
+              />
+            )}
+            {mode === 'tips' && (
+              <CoachTips
+                debateTips={debateTips}
+                currentTip={currentTip}
+                setCurrentTip={setCurrentTip}
+              />
+            )}
+            {mode === 'practice' && (
+              <CoachPractice
+                practiceScenarios={practiceScenarios}
+                startPractice={startPractice}
+              />
+            )}
+            {mode === 'history' && (
+              <CoachHistory
+                conversationSessions={conversationSessions}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filterCategory={filterCategory}
+                setFilterCategory={setFilterCategory}
+                messages={messages}
+                exportMessages={exportMessages}
+              />
+            )}
+            {mode === 'analytics' && (
+              <CoachAnalytics debateMetrics={debateMetrics} />
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
