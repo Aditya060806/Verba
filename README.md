@@ -1,14 +1,14 @@
-# Verba Arena
+# Verba
 
 ## Overview
-**Verba Arena** is the ultimate real-time, AI-powered debate battleground. Step into a fully simulated, cinematic debate tournament—anytime, anywhere. Whether you’re a novice, a champion, or a coach, Verba Arena brings:
+**Verba** is the ultimate real-time, AI-powered debate battleground. Step into a fully simulated, cinematic debate tournament—anytime, anywhere. Whether you’re a novice, a champion, or a coach, Verba Arena brings:
 - **Live AI opponents and judges** (no mock data, ever)
 - **Multiple debate formats** (Asian Parliamentary, British Parliamentary, World Schools)
 - **Cinematic, immersive UI/UX** with neon gradients, motion, and heatmaps
 - **Real-time analytics, gamification, and deep feedback**
 - **Direct integration of official debate manuals and rubrics**
 
-Verba Arena is designed for debaters, coaches, and tournament organizers who demand the full experience of a world-class debate—on demand, on any device. Every round is powered by advanced AI, real tournament logic, and a focus on skill-building and competitive thrill.
+Verba is designed for debaters, coaches, and tournament organizers who demand the full experience of a world-class debate—on demand, on any device. Every round is powered by advanced AI, real tournament logic, and a focus on skill-building and competitive thrill.
 
 ---
 
@@ -61,7 +61,7 @@ Verba Arena is designed for debaters, coaches, and tournament organizers who dem
 ---
 
 ## Supported Formats
-Verba Arena supports the world’s most popular competitive debate formats:
+Verba supports the world’s most popular competitive debate formats:
 - **Asian Parliamentary (AP):**
   - 3 speakers per side
   - 7-minute speeches
@@ -103,7 +103,7 @@ We welcome contributions from debaters, coaches, and developers! To get started:
 ---
 
 ## Ready for Competition
-**Verba Arena is fully live-data ready and competition-grade.**
+**Verba is fully live-data ready and competition-grade.**
 Just add your Sarvam AI and OpenRouter API keys—every feature will run live.
 
 **Step into the arena. Let the debates begin!**
